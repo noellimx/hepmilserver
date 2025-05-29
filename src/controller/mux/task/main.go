@@ -52,4 +52,23 @@ func (h Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	}{})
 }
 
+type DeleteRequestBody struct {
+	SubredditName string `json:"subreddit_name"`
+}
+
+func (h Handlers) Delete(w http.ResponseWriter, r *http.Request) {
+	prefix := httplog.SPrintHttpRequestPrefix(r)
+	form := &DeleteRequestBody{}
+	json.NewDecoder(r.Body).Decode(form)
+
+	err := h.service.Delete(form.SubredditName)
+	if err != nil {
+		log.Printf("%s error=%v\n", prefix, err)
+		response_types.ErrorNoBody(w, http.StatusBadRequest, err)
+		return
+	}
+	response_types.OkJsonBody(w, struct {
+	}{})
+}
+
 type ErrorResponse = response_types.Response[struct{}]

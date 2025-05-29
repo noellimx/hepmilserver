@@ -53,6 +53,7 @@ func main() {
 
 	taskHandlers := taskmux.NewHandlers(taskService)
 	mux.Handle("POST /task", defaultMiddlewares.Finalize(taskHandlers.Create))
+	mux.Handle("DELETE /task", defaultMiddlewares.Finalize(taskHandlers.Delete))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   append(Config.ServerConfig.Cors.AllowedOrigins, "http://localhost:5173", "http://localhost:4173"),
