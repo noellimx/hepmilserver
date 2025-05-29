@@ -4,7 +4,7 @@ import (
 	"github.com/noellimx/hepmilserver/src/repository/task"
 	"log"
 
-	"github.com/noellimx/hepmilserver/src/service/stats_scraper"
+	"github.com/noellimx/hepmilserver/src/infrastructure/stats_scraper"
 )
 
 func main() {

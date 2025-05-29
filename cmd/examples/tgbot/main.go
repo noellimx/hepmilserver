@@ -8,7 +8,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
-	"github.com/noellimx/hepmilserver/src/service/stats_scraper"
+	"github.com/noellimx/hepmilserver/src/infrastructure/stats_scraper"
 	"github.com/noellimx/hepmilserver/src/utils/bytes"
 )
 

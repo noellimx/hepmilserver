@@ -1,6 +1,26 @@
 definitions:
   ping.Response:
     type: object
+  task.CreateRequestBody:
+    properties:
+      interval:
+        description: to be executed every interval ["hour"]
+        type: string
+      items_created_within_past:
+        description: '["day","hour","month","year"]'
+        type: string
+      min_item_count:
+        description: Minimum Item Count to retrieve
+        type: integer
+      order_by:
+        description: '["top", "hot", "best", "new"]'
+        type: string
+      subreddit_name:
+        description: Subreddit Name
+        type: string
+    type: object
+  task.ErrorResponse:
+    type: object
 info:
   contact: {}
 paths:
@@ -18,5 +38,32 @@ paths:
             $ref: '#/definitions/ping.Response'
       summary: Ping the server
       tags:
-      - health
+      - healthcheck
+  /task:
+    post:
+      consumes:
+      - application/json
+      description: Schedule a job to get subreddit with the given parameters.
+      parameters:
+      - description: Create Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.CreateRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/task.ErrorResponse'
+      summary: Create a new task to mine subreddit periodically
+      tags:
+      - subreddit
 swagger: "2.0"

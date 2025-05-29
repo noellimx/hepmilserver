@@ -25,7 +25,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "healthcheck"
                 ],
                 "summary": "Ping the server",
                 "responses": {
@@ -37,10 +37,79 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/task": {
+            "post": {
+                "description": "Schedule a job to get subreddit with the given parameters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subreddit"
+                ],
+                "summary": "Create a new task to mine subreddit periodically",
+                "parameters": [
+                    {
+                        "description": "Create Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/task.CreateRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/task.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
         "ping.Response": {
+            "type": "object"
+        },
+        "task.CreateRequestBody": {
+            "type": "object",
+            "properties": {
+                "interval": {
+                    "description": "to be executed every interval [\"hour\"]",
+                    "type": "string"
+                },
+                "items_created_within_past": {
+                    "description": "[\"day\",\"hour\",\"month\",\"year\"]",
+                    "type": "string"
+                },
+                "min_item_count": {
+                    "description": "Minimum Item Count to retrieve",
+                    "type": "integer"
+                },
+                "order_by": {
+                    "description": "[\"top\", \"hot\", \"best\", \"new\"]",
+                    "type": "string"
+                },
+                "subreddit_name": {
+                    "description": "Subreddit Name",
+                    "type": "string"
+                }
+            }
+        },
+        "task.ErrorResponse": {
             "type": "object"
         }
     }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -9,13 +10,19 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rs/cors"
+	"github.com/noellimx/hepmilserver/src/config"
+	"github.com/noellimx/hepmilserver/src/httplog"
+
+	"github.com/noellimx/hepmilserver/src/controller/middlewares"
+
+	"github.com/noellimx/hepmilserver/src/controller/mux/ping"
+
+	taskmux "github.com/noellimx/hepmilserver/src/controller/mux/task"
+	taskrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
+	taskservice "github.com/noellimx/hepmilserver/src/service/task"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/noellimx/hepmilserver/src/config"
-	"github.com/noellimx/hepmilserver/src/controller/middlewares"
-	"github.com/noellimx/hepmilserver/src/controller/mux/ping"
-	"github.com/noellimx/hepmilserver/src/httplog"
+	"github.com/rs/cors"
 
 	_ "github.com/noellimx/hepmilserver/docs"
 	"github.com/swaggo/http-swagger"
@@ -25,8 +32,7 @@ var Config config.Config
 var DbConnPool *pgxpool.Pool
 
 func main() {
-	var err error
-	Config, err = config.InitConfig()
+	err := Init()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,7 +45,14 @@ func main() {
 
 	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
-	ping.Register(mux, defaultMiddlewares)
+	mux.Handle("/ping", defaultMiddlewares.Finalize(ping.PingHandler{}.ServeHTTP))
+
+	taskRepo := taskrepo.New(DbConnPool)
+	taskService := taskservice.New(taskRepo)
+
+	taskHandlers := taskmux.NewHandlers(taskService)
+	mux.Handle("POST /task", defaultMiddlewares.Finalize(taskHandlers.Create))
+
 	c := cors.New(cors.Options{
 		AllowedOrigins:   append(Config.ServerConfig.Cors.AllowedOrigins, "http://localhost:5173", "http://localhost:4173"),
 		AllowCredentials: true,
@@ -69,6 +82,9 @@ func Init() (err error) {
 	}
 
 	// Db Connection Pool
+	if Config.ConnString == "" {
+		return errors.New("no db connection string provided")
+	}
 	config, err := pgxpool.ParseConfig(Config.ConnString)
 	if err != nil {
 		return err
