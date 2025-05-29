@@ -1,0 +1,22 @@
+definitions:
+  ping.Response:
+    type: object
+info:
+  contact: {}
+paths:
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Returns a simple response to test connectivity
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ping.Response'
+      summary: Ping the server
+      tags:
+      - health
+swagger: "2.0"

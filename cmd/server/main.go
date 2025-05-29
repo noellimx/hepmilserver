@@ -1,32 +1,45 @@
-package server
+package main
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/noellimx/hepmilserver/src/config"
-	"github.com/noellimx/hepmilserver/src/httplog"
-	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/rs/cors"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/noellimx/hepmilserver/src/config"
+	"github.com/noellimx/hepmilserver/src/controller/middlewares"
+	"github.com/noellimx/hepmilserver/src/controller/mux/ping"
+	"github.com/noellimx/hepmilserver/src/httplog"
+
+	_ "github.com/noellimx/hepmilserver/docs"
+	"github.com/swaggo/http-swagger"
 )
 
 var Config config.Config
 var DbConnPool *pgxpool.Pool
 
 func main() {
-
-	config.InitConfig()
+	var err error
+	Config, err = config.InitConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Println("Starting hepmilserver::main().")
 
 	interruptSignal := make(chan os.Signal, 1)
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
-
 	mux := http.NewServeMux()
+	defaultMiddlewares := middlewares.MiddewareStack{}
 
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
+
+	ping.Register(mux, defaultMiddlewares)
 	c := cors.New(cors.Options{
 		AllowedOrigins:   append(Config.ServerConfig.Cors.AllowedOrigins, "http://localhost:5173", "http://localhost:4173"),
 		AllowCredentials: true,
@@ -45,6 +58,8 @@ func main() {
 		}))
 	}()
 
+	recvSig := <-interruptSignal
+	log.Println("Received signal: " + recvSig.String() + " ; exiting...")
 }
 
 func Init() (err error) {
@@ -54,7 +69,6 @@ func Init() (err error) {
 	}
 
 	// Db Connection Pool
-
 	config, err := pgxpool.ParseConfig(Config.ConnString)
 	if err != nil {
 		return err
