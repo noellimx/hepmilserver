@@ -3,30 +3,34 @@ package stats_scraper
 import (
 	"context"
 	"fmt"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 	"log"
 	"time"
+
+	"github.com/chromedp/cdproto/runtime"
+	"github.com/chromedp/chromedp"
+	"github.com/noellimx/hepmilserver/src/repository/task"
 )
 
 type Post struct {
+	Title         string `json:"title"`
 	PermaLinkPath string `json:"perma_link_path"`
-	DataKsId      string `json:"data_ks_id"`
-	Score         string `json:"score"`
-	SubId         string `json:"sub_id"`
-	Title         string `json:"post_title"`
-	CommentCount  string `json:"comment_count"`
+	DataKsId      string `json:"data_ks_id"` // the raw post id prepended with `t3_`, i.e t3_1ky2rld
+
+	SubredditId         string `json:"subreddit_id"`
+	SubredditPrefixName string `json:"subreddit_prefix_name"`
+
+	Score        string `json:"score"`
+	CommentCount string `json:"comment_count"`
+
+	AuthorId   string `json:"author_id"`
+	AuthorName string `json:"author_name"`
+
+	CreatedTimestamp string `json:"created_timestamp"`
 }
 
-type TimeFrame string
-
-const (
-	TimeFrame_Day TimeFrame = "day"
-)
-
-func SubRedditStatistics(subReddit string, timeFrame TimeFrame, debugEnabled bool) ([]Post, error) {
-	if timeFrame != TimeFrame_Day {
-		return []Post{}, fmt.Errorf("time frame not supported %s", timeFrame)
+func SubRedditStatistics(subReddit string, createdWithinPast task.CreatedWithinPast, debugEnabled bool) ([]Post, error) {
+	if createdWithinPast != task.CreatedWithinPastDay {
+		return []Post{}, fmt.Errorf("time frame not supported %s", createdWithinPast)
 	}
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
@@ -49,7 +53,7 @@ func SubRedditStatistics(subReddit string, timeFrame TimeFrame, debugEnabled boo
 
 	var articles []Post
 
-	url := "https://www.reddit.com/r/" + subReddit
+	url := fmt.Sprintf("https://www.reddit.com/r/%s?t=%s", subReddit, createdWithinPast)
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(url),
 		chromedp.ActionFunc(func(ctx context.Context) error {
@@ -67,10 +71,15 @@ func SubRedditStatistics(subReddit string, timeFrame TimeFrame, debugEnabled boo
 		    const data_ks_id = el.querySelector("a").getAttribute('data-ks-id');
 		    const perma_link_path = el.getAttribute('permalink');
 		    const score = el.getAttribute('score');
-		    const post_title = el.getAttribute('post-title');
+		    const title = el.getAttribute('post-title');
 		    const comment_count = el.getAttribute('comment-count');
-
-		   return { perma_link_path,post_title,comment_count, data_ks_id, score, sub_id: el.getAttribute('subreddit-id')}
+		    const subreddit_id = el.getAttribute('subreddit-id');
+		    const subreddit_prefix_name = el.getAttribute('subreddit-prefixed-name');
+		    const created_timestamp = el.getAttribute('created-timestamp');
+		    const author_id = el.getAttribute('author-id');
+		    const author_name = el.getAttribute('author-name');
+		
+		   return { subreddit_id, subreddit_prefix_name, perma_link_path,title,comment_count, data_ks_id, score, created_timestamp, author_id, author_name }
 		})`, &articles),
 	)
 
