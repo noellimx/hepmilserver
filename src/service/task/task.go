@@ -10,6 +10,10 @@ type Service struct {
 	repo *task.Repo
 }
 
+func New(repo *task.Repo) *Service {
+	return &Service{repo: repo}
+}
+
 func (s Service) Create(name string, count int64, _interval string, by string, past string) error {
 	orderBy := task.OrderByColumn(by)
 	interval := task.Interval(_interval)
@@ -34,8 +38,4 @@ func (s Service) GetTasks(interval task.Interval) ([]task.Task, error) {
 	}
 
 	return tasks, nil
-}
-
-func New(repo *task.Repo) *Service {
-	return &Service{repo: repo}
 }

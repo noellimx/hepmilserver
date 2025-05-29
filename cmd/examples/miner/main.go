@@ -2,15 +2,20 @@ package main
 
 import (
 	"log"
+	"time"
 
-	"github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
-	"github.com/noellimx/hepmilserver/src/infrastructure/stats_scraper"
+	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
 )
 
 func main() {
-	posts, err := stats_scraper.SubRedditStatistics("memes", task.CreatedWithinPastDay, false)
-	if err != nil {
-		log.Fatal(err)
+	postsC := reddit_miner.SubRedditPosts("memes", reddit_miner.CreatedWithinPastDay, reddit_miner.OrderByColumnTop, true)
+	var posts []reddit_miner.Post
+	for p := range postsC {
+		posts = append(posts, p)
 	}
+	time.Sleep(10 * time.Second)
+
 	log.Printf("len(posts): %d %#v\n", len(posts), posts)
+
+	time.Sleep(10 * time.Second)
 }

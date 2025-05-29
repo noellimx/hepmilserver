@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
+	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
+	"github.com/noellimx/hepmilserver/src/utils/bytes"
 	"log"
 	"os"
-
-	"github.com/joho/godotenv"
-	"github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
-	"github.com/noellimx/hepmilserver/src/infrastructure/stats_scraper"
-	"github.com/noellimx/hepmilserver/src/utils/bytes"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -64,7 +62,11 @@ func main() {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Working on it.... %v", update.Message.Time()))
 				bot.Send(msg)
 
-				posts, err := stats_scraper.SubRedditStatistics("memes", task.CreatedWithinPastDay, false)
+				postCh := reddit_miner.SubRedditPosts("memes", reddit_miner.CreatedWithinPastDay, reddit_miner.OrderByColumnTop, false)
+				var posts []reddit_miner.Post
+				for post := range postCh {
+					posts = append(posts, post)
+				}
 				toCsv(posts)
 				b, err := bytes.TwoDStringAsBytes(toCsv(posts))
 				if err != nil {
@@ -82,7 +84,7 @@ func main() {
 	}
 }
 
-func toCsv(posts []stats_scraper.Post) [][]string {
+func toCsv(posts []reddit_miner.Post) [][]string {
 	header := []string{
 		"title",
 		"perma_link_path",
@@ -93,7 +95,7 @@ func toCsv(posts []stats_scraper.Post) [][]string {
 		"comment_count",
 		"author_id",
 		"author_name",
-		"created_timestamp",
+		//"created_timestamp",
 	}
 	rows := [][]string{header}
 	for _, p := range posts {
@@ -102,12 +104,12 @@ func toCsv(posts []stats_scraper.Post) [][]string {
 			p.PermaLinkPath,
 			p.DataKsId,
 			p.SubredditId,
-			p.SubredditPrefixName,
+			p.SubredditPrefixedName,
 			p.Score,
 			p.CommentCount,
 			p.AuthorId,
 			p.AuthorName,
-			p.CreatedTimestamp,
+			//p.CreatedTimestamp,
 		})
 	}
 	return rows

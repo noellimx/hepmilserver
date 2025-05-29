@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
+	"github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
+	statistics2 "github.com/noellimx/hepmilserver/src/service/statistics"
 	"log"
 	"net/http"
 	"os"
@@ -64,6 +67,9 @@ func main() {
 		Debug: true,
 	}).Handler(mux)
 
+	statisticsRepo := statistics.NewAAA(DbConnPool)
+	statisticService := statistics2.NewWWW(statisticsRepo)
+
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
 		http.ListenAndServe(Config.ServerConfig.Port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +79,7 @@ func main() {
 		}))
 	}()
 
-	cron := NewWorker(taskService)
+	cron := NewWorker(taskService, statisticService)
 	cron.Start()
 
 	recvSig := <-interruptSignal
@@ -116,7 +122,7 @@ func Init() (err error) {
 	return nil
 }
 
-func NewWorker(taskService *taskservice.Service) *cron.Cron {
+func NewWorker(taskService *taskservice.Service, statisticsService *statistics2.Service) *cron.Cron {
 	c := cron.New(cron.WithChain(
 		cron.Recover(cron.DefaultLogger),
 	))
@@ -133,6 +139,10 @@ func NewWorker(taskService *taskservice.Service) *cron.Cron {
 		tasks, err := taskService.GetTasks(taskrepo.IntervalHour)
 		if err != nil {
 			log.Println(err)
+		}
+
+		for _, task := range tasks {
+			go statisticsService.Scrape(task.SubRedditName, reddit_miner.CreatedWithinPast(task.PostsCreatedWithinPast))
 		}
 		log.Printf("Tasks: %#v\n", tasks)
 	})
