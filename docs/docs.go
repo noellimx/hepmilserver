@@ -77,6 +77,45 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "Schedule a job to get subreddit with the given parameters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subreddit"
+                ],
+                "summary": "Removes a task",
+                "parameters": [
+                    {
+                        "description": "Delete Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/task.DeleteRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/task.ErrorResponse"
+                        }
+                    }
+                }
             }
         }
     },
@@ -105,6 +144,14 @@ const docTemplate = `{
                 },
                 "subreddit_name": {
                     "description": "Subreddit Name",
+                    "type": "string"
+                }
+            }
+        },
+        "task.DeleteRequestBody": {
+            "type": "object",
+            "properties": {
+                "subreddit_name": {
                     "type": "string"
                 }
             }

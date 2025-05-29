@@ -19,6 +19,11 @@ definitions:
         description: Subreddit Name
         type: string
     type: object
+  task.DeleteRequestBody:
+    properties:
+      subreddit_name:
+        type: string
+    type: object
   task.ErrorResponse:
     type: object
 info:
@@ -40,6 +45,32 @@ paths:
       tags:
       - healthcheck
   /task:
+    delete:
+      consumes:
+      - application/json
+      description: Schedule a job to get subreddit with the given parameters.
+      parameters:
+      - description: Delete Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.DeleteRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/task.ErrorResponse'
+      summary: Removes a task
+      tags:
+      - subreddit
     post:
       consumes:
       - application/json

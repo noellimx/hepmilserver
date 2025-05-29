@@ -56,6 +56,16 @@ type DeleteRequestBody struct {
 	SubredditName string `json:"subreddit_name"`
 }
 
+// Delete godoc
+// @Summary      Removes a task
+// @Description  Schedule a job to get subreddit with the given parameters.
+// @Tags         subreddit
+// @Accept       json
+// @Produce      json
+// @Param        request body DeleteRequestBody true "Delete Request Body"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  ErrorResponse
+// @Router       /task [delete]
 func (h Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	prefix := httplog.SPrintHttpRequestPrefix(r)
 	form := &DeleteRequestBody{}
