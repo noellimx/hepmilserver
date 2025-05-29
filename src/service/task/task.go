@@ -27,6 +27,15 @@ func (s Service) Delete(subRedditName string) error {
 	return s.repo.Delete(subRedditName)
 }
 
+func (s Service) GetTasks(interval task.Interval) ([]task.Task, error) {
+	tasks, err := s.repo.GetByTaskInterval(interval)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func New(repo *task.Repo) *Service {
 	return &Service{repo: repo}
 }

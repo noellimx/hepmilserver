@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
 	"log"
 
+	"github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
 	"github.com/noellimx/hepmilserver/src/infrastructure/stats_scraper"
 )
 

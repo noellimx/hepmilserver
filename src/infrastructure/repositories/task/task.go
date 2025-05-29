@@ -51,21 +51,30 @@ func (r *Repo) Delete(subRedditName string) error {
 	return err
 }
 
-func (r *Repo) GetByTaskInterval(every Interval) ([]string, error) {
-	rows, err := r.conn.Query(context.Background(), "select subreddit_name, min_item_count, interval, order_by, items_created_within_past from tasks where interval = $1", every)
+type Task struct {
+	Id                     int64
+	SubRedditName          string
+	MinItemCount           int64
+	Interval               Interval
+	OrderBy                OrderByColumn
+	PostsCreatedWithinPast CreatedWithinPast
+}
+
+func (r *Repo) GetByTaskInterval(every Interval) ([]Task, error) {
+	rows, err := r.conn.Query(context.Background(), "select id, subreddit_name, min_item_count, interval, order_by, items_created_within_past from tasks where interval = $1", every)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var items []string
+	var task []Task
 	for rows.Next() {
-		var subreddit_name string
-		rows.Scan(&subreddit_name)
+		var t Task
+		rows.Scan(&t.Id, &t.SubRedditName, &t.MinItemCount, &t.Interval, &t.OrderBy, &t.PostsCreatedWithinPast)
 		if err := rows.Err(); err != nil {
-			return []string{}, err
+			return []Task{}, err
 		}
-		items = append(items, subreddit_name)
+		task = append(task, t)
 	}
-	return items, nil
+	return task, nil
 }

@@ -22,6 +22,7 @@ import (
 	taskservice "github.com/noellimx/hepmilserver/src/service/task"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/robfig/cron/v3"
 	"github.com/rs/cors"
 
 	_ "github.com/noellimx/hepmilserver/docs"
@@ -71,8 +72,14 @@ func main() {
 		}))
 	}()
 
+	cron := NewWorker(taskService)
+	cron.Start()
+
 	recvSig := <-interruptSignal
-	log.Println("Received signal: " + recvSig.String() + " ; exiting...")
+	log.Println("Received signal: " + recvSig.String() + " ; tearing down...")
+	<-cron.Stop().Done()
+
+	log.Println("Terminating hepmilserver::main()...")
 }
 
 func Init() (err error) {
@@ -106,4 +113,27 @@ func Init() (err error) {
 		panic(err)
 	}
 	return nil
+}
+
+func NewWorker(taskService *taskservice.Service) *cron.Cron {
+	c := cron.New(cron.WithChain(
+		cron.Recover(cron.DefaultLogger),
+	))
+	/* robfig/cron
+	Entry                  | Description                                | Equivalent To
+	-----                  | -----------                                | -------------
+	@yearly (or @annually) | Run once a year, midnight, Jan. 1st        | 0 0 1 1 *
+	@monthly               | Run once a month, midnight, first of month | 0 0 1 * *
+	@weekly                | Run once a week, midnight between Sat/Sun  | 0 0 * * 0
+	@daily (or @midnight)  | Run once a day, midnight                   | 0 0 * * *
+	@hourly                | Run once an hour, beginning of hour        | 0 * * * *
+	*/
+	c.AddFunc("@every 1m", func() {
+		tasks, err := taskService.GetTasks(taskrepo.IntervalHour)
+		if err != nil {
+			log.Println(err)
+		}
+		log.Printf("Tasks: %#v\n", tasks)
+	})
+	return c
 }
