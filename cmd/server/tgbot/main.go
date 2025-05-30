@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
-	"github.com/noellimx/hepmilserver/src/utils/bytes"
 	"log"
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
+	"github.com/joho/godotenv"
+	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
+	"github.com/noellimx/hepmilserver/src/utils/bytes"
 )
 
 func main() {
