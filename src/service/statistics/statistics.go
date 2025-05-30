@@ -1,6 +1,7 @@
 package statistics
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -16,10 +17,10 @@ func NewWWW(repo *statisticsRepo.Repo) *Service {
 	return &Service{repo: repo}
 }
 
-func (s Service) Scrape(subRedditName string, postsCreatedWithinPast reddit_miner.CreatedWithinPast) {
+func (s Service) Scrape(subRedditName string, postsCreatedWithinPast reddit_miner.CreatedWithinPast, algo reddit_miner.OrderByAlgo) {
 	now := time.Now().UTC()
 	roundDownTo5Mins := now.Truncate(1 * time.Minute)
-	postCh := reddit_miner.SubRedditPosts(subRedditName, postsCreatedWithinPast, reddit_miner.OrderByAlgoTop, true)
+	postCh := reddit_miner.SubRedditPosts(subRedditName, postsCreatedWithinPast, algo, true)
 
 	var postForms []statisticsRepo.PostForm
 	for p := range postCh {
@@ -46,4 +47,33 @@ func (s Service) Scrape(subRedditName string, postsCreatedWithinPast reddit_mine
 	//log.Printf("Posts: %#v\n", len(posts))
 
 	s.repo.InsertMany(postForms)
+}
+
+func (s Service) Stats(name string, orderType statisticsRepo.OrderByAlgo, past statisticsRepo.CreatedWithinPast, granularity statisticsRepo.Granularity, fromTime *time.Time, toTime *time.Time) ([]statisticsRepo.Post, error) {
+	if orderType != statisticsRepo.OrderByAlgoTop {
+		return []statisticsRepo.Post{}, fmt.Errorf("order algo type %s not supported", orderType)
+	}
+
+	if past != statisticsRepo.CreatedWithinPastDay {
+		return []statisticsRepo.Post{}, fmt.Errorf("past day %s not supported", past)
+	}
+
+	if name == "" {
+		return []statisticsRepo.Post{}, fmt.Errorf("empty subreddit name")
+	}
+
+	switch granularity {
+	case statisticsRepo.GranularityDaily, statisticsRepo.GranularityHour, statisticsRepo.GranularityQuarterHour:
+		break
+	default:
+		return nil, fmt.Errorf("granularity type not supported. =%d", granularity)
+	}
+
+	posts, err := s.repo.Stats(name, orderType, fromTime, toTime, past, granularity)
+	if err != nil {
+		return []statisticsRepo.Post{}, err
+	}
+
+	return posts, nil
+
 }

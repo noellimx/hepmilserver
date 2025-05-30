@@ -38,6 +38,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/statistics": {
+            "get": {
+                "description": "Retrieve time series data in normalized form.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subreddit"
+                ],
+                "summary": "Retrieve time series data in normalized form.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "subreddit_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "[",
+                        "name": "rank_order_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "[",
+                        "name": "rank_order_created_within_past",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "1=Minute,2=QuarterHour,3=Hour,4=Daily,5=Mins",
+                        "name": "granularity",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/statistics.GetStatisticsResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/statistics.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/task": {
             "post": {
                 "description": "Schedule a job to get subreddit with the given parameters.",
@@ -121,6 +180,12 @@ const docTemplate = `{
     },
     "definitions": {
         "ping.Response": {
+            "type": "object"
+        },
+        "statistics.ErrorResponse": {
+            "type": "object"
+        },
+        "statistics.GetStatisticsResponseBody": {
             "type": "object"
         },
         "task.CreateRequestBody": {

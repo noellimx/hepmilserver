@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/noellimx/hepmilserver/src/controller/mux/statistics"
 
 	"log"
 	"net/http"
@@ -55,10 +56,16 @@ func main() {
 
 	taskRepo := taskrepo.New(DbConnPool)
 	taskService := taskservice.New(taskRepo)
-
 	taskHandlers := taskmux.NewHandlers(taskService)
+
 	mux.Handle("POST /task", defaultMiddlewares.Finalize(taskHandlers.Create))
 	mux.Handle("DELETE /task", defaultMiddlewares.Finalize(taskHandlers.Delete))
+
+	statisticsRepo := statisticsrepo.NewAAA(DbConnPool)
+	statisticService := statisticsservice.NewWWW(statisticsRepo)
+	statisticsHandler := statistics.NewHandlers(statisticService)
+
+	mux.Handle("GET /statistics", defaultMiddlewares.Finalize(statisticsHandler.Get))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   append(Config.ServerConfig.Cors.AllowedOrigins, "http://localhost:5173", "http://localhost:4173"),
@@ -68,9 +75,6 @@ func main() {
 		// Enable Debugging for testing, consider disabling in production
 		Debug: true,
 	}).Handler(mux)
-
-	statisticsRepo := statisticsrepo.NewAAA(DbConnPool)
-	statisticService := statisticsservice.NewWWW(statisticsRepo)
 
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
@@ -144,7 +148,7 @@ func NewWorker(taskService *taskservice.Service, statisticsService *statisticsse
 		}
 
 		for _, task := range tasks {
-			go statisticsService.Scrape(task.SubRedditName, reddit_miner.CreatedWithinPast(task.PostsCreatedWithinPast))
+			go statisticsService.Scrape(task.SubRedditName, reddit_miner.CreatedWithinPast(task.PostsCreatedWithinPast), reddit_miner.OrderByAlgo(task.OrderBy))
 		}
 		log.Printf("Tasks: %#v\n", tasks)
 	})

@@ -36,7 +36,7 @@ type PostDom struct {
 	Score        string `json:"score"`
 	CommentCount string `json:"comment_count"`
 
-	Rank int32 `json:"ranking"`
+	Index int32 `json:"index"`
 }
 
 type Post struct {
@@ -132,10 +132,8 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 		    const created_timestamp = el.getAttribute('created-timestamp');
 		    const author_id = el.getAttribute('author-id');
 		    const author = el.getAttribute('author');
-
-			const ranking = index;
 		
-		   return { ranking, subreddit_id, subreddit_prefix_name, perma_link_path,title,comment_count, data_ks_id, score, created_timestamp, author_id, author }
+		   return { index, subreddit_id, subreddit_prefix_name, perma_link_path,title,comment_count, data_ks_id, score, created_timestamp, author_id, author }
 		})`, &posts),
 		)
 		for _, p := range posts {
@@ -152,7 +150,7 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 				c := int32(_score)
 				score = &c
 			}
-			log.Printf("p.Rank %v", p.Rank)
+			log.Printf("p.Rank %v", p.Index)
 
 			ch <- Post{
 				Title:                         p.Title,
@@ -165,7 +163,7 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 				CreatedTimestamp:              p.CreatedTimestamp,
 				Score:                         score,
 				CommentCount:                  commentCount,
-				Rank:                          p.Rank,
+				Rank:                          p.Index + 1,
 				RankOrderType:                 orderBy,
 				RankOrderForCreatedWithinPast: createdWithinPast,
 			}

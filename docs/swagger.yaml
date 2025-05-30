@@ -1,6 +1,10 @@
 definitions:
   ping.Response:
     type: object
+  statistics.ErrorResponse:
+    type: object
+  statistics.GetStatisticsResponseBody:
+    type: object
   task.CreateRequestBody:
     properties:
       interval:
@@ -44,6 +48,46 @@ paths:
       summary: Ping the server
       tags:
       - healthcheck
+  /statistics:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve time series data in normalized form.
+      parameters:
+      - description: name
+        in: query
+        name: subreddit_name
+        required: true
+        type: string
+      - description: '['
+        in: query
+        name: rank_order_type
+        required: true
+        type: string
+      - description: '['
+        in: query
+        name: rank_order_created_within_past
+        required: true
+        type: string
+      - description: 1=Minute,2=QuarterHour,3=Hour,4=Daily,5=Mins
+        in: query
+        name: granularity
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/statistics.GetStatisticsResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/statistics.ErrorResponse'
+      summary: Retrieve time series data in normalized form.
+      tags:
+      - subreddit
   /task:
     delete:
       consumes:
