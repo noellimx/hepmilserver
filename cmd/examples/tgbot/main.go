@@ -62,7 +62,7 @@ func main() {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Working on it.... %v", update.Message.Time()))
 				bot.Send(msg)
 
-				postCh := reddit_miner.SubRedditPosts("memes", reddit_miner.CreatedWithinPastDay, reddit_miner.OrderByColumnTop, false)
+				postCh := reddit_miner.SubRedditPosts("memes", reddit_miner.CreatedWithinPastDay, reddit_miner.OrderByAlgoTop, false)
 				var posts []reddit_miner.Post
 				for post := range postCh {
 					posts = append(posts, post)
@@ -91,8 +91,8 @@ func toCsv(posts []reddit_miner.Post) [][]string {
 		"data_ks_id",
 		"subreddit_id",
 		"subreddit_prefix_name",
-		"score",
-		"comment_count",
+		//"score",
+		//"comment_count",
 		"author_id",
 		"author_name",
 		//"created_timestamp",
@@ -105,8 +105,8 @@ func toCsv(posts []reddit_miner.Post) [][]string {
 			p.DataKsId,
 			p.SubredditId,
 			p.SubredditPrefixedName,
-			p.Score,
-			p.CommentCount,
+			//p.Score,
+			//p.CommentCount,
 			p.AuthorId,
 			p.AuthorName,
 			//p.CreatedTimestamp,

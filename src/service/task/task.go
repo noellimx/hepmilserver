@@ -15,7 +15,7 @@ func New(repo *task.Repo) *Service {
 }
 
 func (s Service) Create(name string, count int64, _interval string, by string, past string) error {
-	orderBy := task.OrderByColumn(by)
+	orderBy := task.OrderByAlgo(by)
 	interval := task.Interval(_interval)
 	if name == "" || count <= 0 || interval == "" || orderBy == "" || past == "" {
 		return fmt.Errorf("invalid params, name %v, count %v, interval %v, by %v, past %v", name, count, interval, orderBy, past)

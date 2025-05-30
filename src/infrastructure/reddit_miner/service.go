@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/chromedp/cdproto/runtime"
@@ -19,33 +20,56 @@ const (
 	CreatedWithinPastYear  CreatedWithinPast = "year"
 )
 
-type Post struct {
+type PostDom struct {
 	Title         string `json:"title"`
-	PermaLinkPath string `json:"perma_link_path"`
 	DataKsId      string `json:"data_ks_id"` // the raw post id prepended with `t3_`, i.e t3_1ky2rld
+	PermaLinkPath string `json:"perma_link_path"`
 
 	SubredditId           string `json:"subreddit_id"`
 	SubredditPrefixedName string `json:"subreddit_prefix_name"`
-
-	Score        string `json:"score"`
-	CommentCount string `json:"comment_count"`
 
 	AuthorId   string `json:"author_id"`
 	AuthorName string `json:"author"`
 
 	CreatedTimestamp string `json:"created_timestamp"`
+
+	Score        string `json:"score"`
+	CommentCount string `json:"comment_count"`
+
+	Rank int32 `json:"ranking"`
 }
 
-type OrderByColumn string
+type Post struct {
+	Title         string
+	DataKsId      string
+	PermaLinkPath string
+
+	SubredditId           string
+	SubredditPrefixedName string
+
+	AuthorId   string
+	AuthorName string
+
+	CreatedTimestamp string
+
+	Score        *int32
+	CommentCount *int32
+
+	Rank                          int32
+	RankOrderType                 OrderByAlgo
+	RankOrderForCreatedWithinPast CreatedWithinPast
+}
+
+type OrderByAlgo string
 
 const (
-	OrderByColumnTop  OrderByColumn = "top"
-	OrderByColumnBest OrderByColumn = "best"
-	OrderByColumnHot  OrderByColumn = "hot"
-	OrderByColumnNew  OrderByColumn = "new"
+	OrderByAlgoTop  OrderByAlgo = "top"
+	OrderByAlgoBest OrderByAlgo = "best"
+	OrderByAlgoHot  OrderByAlgo = "hot"
+	OrderByAlgoNew  OrderByAlgo = "new"
 )
 
-func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, orderBy OrderByColumn, debugLogEnabled bool) <-chan Post {
+func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, orderBy OrderByAlgo, debugLogEnabled bool) <-chan Post {
 	ch := make(chan Post)
 	go func() {
 		if createdWithinPast != CreatedWithinPastDay {
@@ -83,11 +107,10 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 		url := fmt.Sprintf("https://www.reddit.com/r/%s/%s?t=%s", subReddit, orderBy, createdWithinPast)
 		log.Printf("SubRedditPosts() URL: %s", url)
 
-		var posts []Post
+		var posts []PostDom
 		chromedp.Run(ctx,
 			chromedp.Navigate(url),
 			chromedp.ActionFunc(func(ctx context.Context) error {
-				log.Printf("action func")
 				_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
 				time.Sleep(10 * time.Second)
 				if err != nil {
@@ -98,7 +121,7 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 				}
 				return nil
 			}),
-			chromedp.Evaluate(`Array.from(document.querySelectorAll("[data-ks-item]")).map(el => {
+			chromedp.Evaluate(`Array.from(document.querySelectorAll("[data-ks-item]")).map((el, index) => {
 		    const data_ks_id = el.querySelector("a").getAttribute('data-ks-id');
 		    const perma_link_path = el.getAttribute('permalink');
 		    const score = el.getAttribute('score');
@@ -109,14 +132,44 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 		    const created_timestamp = el.getAttribute('created-timestamp');
 		    const author_id = el.getAttribute('author-id');
 		    const author = el.getAttribute('author');
+
+			const ranking = index;
 		
-		   return { subreddit_id, subreddit_prefix_name, perma_link_path,title,comment_count, data_ks_id, score, created_timestamp, author_id, author }
+		   return { ranking, subreddit_id, subreddit_prefix_name, perma_link_path,title,comment_count, data_ks_id, score, created_timestamp, author_id, author }
 		})`, &posts),
 		)
-		for _, post := range posts {
-			ch <- post
-		}
+		for _, p := range posts {
+			var commentCount *int32
+			_commentCount, err := strconv.Atoi(p.CommentCount)
+			if err == nil {
+				c := int32(_commentCount)
+				commentCount = &c
+			}
 
+			var score *int32
+			_score, err := strconv.Atoi(p.Score)
+			if err == nil {
+				c := int32(_score)
+				score = &c
+			}
+			log.Printf("p.Rank %v", p.Rank)
+
+			ch <- Post{
+				Title:                         p.Title,
+				DataKsId:                      p.DataKsId,
+				PermaLinkPath:                 p.PermaLinkPath,
+				SubredditId:                   p.SubredditId,
+				SubredditPrefixedName:         p.SubredditPrefixedName,
+				AuthorId:                      p.AuthorId,
+				AuthorName:                    p.AuthorName,
+				CreatedTimestamp:              p.CreatedTimestamp,
+				Score:                         score,
+				CommentCount:                  commentCount,
+				Rank:                          p.Rank,
+				RankOrderType:                 orderBy,
+				RankOrderForCreatedWithinPast: createdWithinPast,
+			}
+		}
 		close(ch)
 	}()
 	return ch

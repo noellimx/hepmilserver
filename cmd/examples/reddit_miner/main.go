@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	postsC := reddit_miner.SubRedditPosts("memes", reddit_miner.CreatedWithinPastDay, reddit_miner.OrderByColumnTop, true)
+	postsC := reddit_miner.SubRedditPosts("memes", reddit_miner.CreatedWithinPastDay, reddit_miner.OrderByAlgoTop, true)
 	var posts []reddit_miner.Post
 	for p := range postsC {
 		posts = append(posts, p)

@@ -31,16 +31,16 @@ const (
 	CreatedWithinPastYear  CreatedWithinPast = "year"
 )
 
-type OrderByColumn string
+type OrderByAlgo string
 
 const (
-	OrderByColumnTop  OrderByColumn = "top"
-	OrderByColumnBest OrderByColumn = "best"
-	OrderByColumnHot  OrderByColumn = "hot"
-	OrderByColumnNew  OrderByColumn = "new"
+	OrderByAlgoTop  OrderByAlgo = "top"
+	OrderByAlgoBest OrderByAlgo = "best"
+	OrderByAlgoHot  OrderByAlgo = "hot"
+	OrderByAlgoNew  OrderByAlgo = "new"
 )
 
-func (r *Repo) Create(subRedditName string, itemCount int64, interval Interval, by OrderByColumn, itemsCreatedWithin CreatedWithinPast) error {
+func (r *Repo) Create(subRedditName string, itemCount int64, interval Interval, by OrderByAlgo, itemsCreatedWithin CreatedWithinPast) error {
 	row := r.conn.QueryRow(context.Background(), "insert into tasks(subreddit_name, min_item_count, interval, order_by, items_created_within_past) VALUES ($1,$2,$3,$4, $5) RETURNING id", subRedditName, itemCount, interval, by, itemsCreatedWithin)
 	var id int64
 	return row.Scan(&id)
@@ -56,7 +56,7 @@ type Task struct {
 	SubRedditName          string
 	MinItemCount           int64
 	Interval               Interval
-	OrderBy                OrderByColumn
+	OrderBy                OrderByAlgo
 	PostsCreatedWithinPast CreatedWithinPast
 }
 

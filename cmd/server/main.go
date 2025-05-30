@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
-	"github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
-	statistics2 "github.com/noellimx/hepmilserver/src/service/statistics"
+
 	"log"
 	"net/http"
 	"os"
@@ -23,6 +21,10 @@ import (
 	taskmux "github.com/noellimx/hepmilserver/src/controller/mux/task"
 	taskrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
 	taskservice "github.com/noellimx/hepmilserver/src/service/task"
+
+	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
+	statisticsrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
+	statisticsservice "github.com/noellimx/hepmilserver/src/service/statistics"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
@@ -67,8 +69,8 @@ func main() {
 		Debug: true,
 	}).Handler(mux)
 
-	statisticsRepo := statistics.NewAAA(DbConnPool)
-	statisticService := statistics2.NewWWW(statisticsRepo)
+	statisticsRepo := statisticsrepo.NewAAA(DbConnPool)
+	statisticService := statisticsservice.NewWWW(statisticsRepo)
 
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
@@ -122,7 +124,7 @@ func Init() (err error) {
 	return nil
 }
 
-func NewWorker(taskService *taskservice.Service, statisticsService *statistics2.Service) *cron.Cron {
+func NewWorker(taskService *taskservice.Service, statisticsService *statisticsservice.Service) *cron.Cron {
 	c := cron.New(cron.WithChain(
 		cron.Recover(cron.DefaultLogger),
 	))
