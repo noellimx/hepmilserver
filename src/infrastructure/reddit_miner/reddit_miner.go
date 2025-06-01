@@ -108,15 +108,17 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 		log.Printf("SubRedditPosts() URL: %s", url)
 
 		var posts []PostDom
-		chromedp.Run(ctx,
+		err := chromedp.Run(ctx,
 			chromedp.Navigate(url),
 			chromedp.ActionFunc(func(ctx context.Context) error {
 				_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
 				time.Sleep(10 * time.Second)
 				if err != nil {
+					log.Println(err)
 					return err
 				}
 				if exp != nil {
+					log.Println(exp)
 					return exp
 				}
 				return nil
@@ -136,6 +138,9 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 		   return { index, subreddit_id, subreddit_prefix_name, perma_link_path,title,comment_count, data_ks_id, score, created_timestamp, author_id, author }
 		})`, &posts),
 		)
+		if err != nil {
+			log.Println(err)
+		}
 		for _, p := range posts {
 			var commentCount *int32
 			_commentCount, err := strconv.Atoi(p.CommentCount)

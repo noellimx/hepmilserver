@@ -79,7 +79,7 @@ func (r *Repo) insert(post PostForm) error {
 }
 
 func (r *Repo) InsertMany(posts []PostForm) {
-	log.Printf("InsertMany Posts: %#v\n", posts)
+	log.Printf("InsertMany Posts length: %d\n", len(posts))
 	for _, post := range posts {
 		go func() {
 			err := r.insert(post)
