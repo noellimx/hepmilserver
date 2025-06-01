@@ -15,7 +15,7 @@ type PingHandler struct {
 }
 
 // PingHandler godoc
-// @Summary      Ping the server
+// @Summary      Ping the server.
 // @Description  Returns a simple response to test connectivity
 // @Tags         healthcheck
 // @Accept       json

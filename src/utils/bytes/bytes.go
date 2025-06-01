@@ -6,20 +6,13 @@ import (
 )
 
 func TwoDStringAsBytes(data [][]string) (*bytes.Buffer, error) {
-	// Create CSV file
 	var buf bytes.Buffer
-
-	// Create CSV writer
 	writer := csv.NewWriter(&buf)
+	defer writer.Flush()
 
-	// Write the data to the file
 	err := writer.WriteAll(data)
 	if err != nil {
 		return nil, err
 	}
-	writer.Flush()
-
-	// Return the file object
-
 	return &buf, nil
 }

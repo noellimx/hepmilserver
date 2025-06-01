@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/noellimx/hepmilserver/src/controller/mux/statistics"
 
 	"log"
 	"net/http"
@@ -23,6 +22,7 @@ import (
 	taskrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
 	taskservice "github.com/noellimx/hepmilserver/src/service/task"
 
+	statisticsmux "github.com/noellimx/hepmilserver/src/controller/mux/statistics"
 	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
 	statisticsrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
 	statisticsservice "github.com/noellimx/hepmilserver/src/service/statistics"
@@ -60,10 +60,11 @@ func main() {
 
 	mux.Handle("POST /task", defaultMiddlewares.Finalize(taskHandlers.Create))
 	mux.Handle("DELETE /task", defaultMiddlewares.Finalize(taskHandlers.Delete))
+	mux.Handle("GET /tasks", defaultMiddlewares.Finalize(taskHandlers.List))
 
 	statisticsRepo := statisticsrepo.NewAAA(DbConnPool)
 	statisticService := statisticsservice.NewWWW(statisticsRepo)
-	statisticsHandler := statistics.NewHandlers(statisticService)
+	statisticsHandler := statisticsmux.NewHandlers(statisticService)
 
 	mux.Handle("GET /statistics", defaultMiddlewares.Finalize(statisticsHandler.Get))
 
@@ -142,7 +143,7 @@ func NewWorker(taskService *taskservice.Service, statisticsService *statisticsse
 	@hourly                | Run once an hour, beginning of hour        | 0 * * * *
 	*/
 	c.AddFunc("@every 1m", func() {
-		tasks, err := taskService.GetTasks(taskrepo.IntervalHour)
+		tasks, err := taskService.GetTasksByInterval(taskrepo.GranularityHour)
 		if err != nil {
 			log.Println(err)
 		}

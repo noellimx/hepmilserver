@@ -120,44 +120,7 @@ func main() {
 }
 
 func convert(posts []Post) [][]string {
-	header := []string{
-		"id",
-		"title",
-		"perma_link_path",
-		"data_ks_id",
-		"score",
-		"subreddit_id",
-		"comment_count",
-		"subreddit_name",
-		"polled_time",
-		"author_id",
-		"author_name",
-		"polled_time_rounded_min",
-		"rank",
-		"rank_order_type",
-		"rank_order_created_within_past",
-	}
-	rows := [][]string{header}
-	for _, p := range posts {
-		rows = append(rows, []string{
-			strconv.FormatInt(p.Id, 10),
-			p.Title,
-			p.PermaLinkPath,
-			p.DataKsId,
-			strconv.FormatInt(int64(p.Score), 10),
-			p.SubredditId,
-			strconv.FormatInt(int64(p.CommentCount), 10),
-			p.SubredditName,
-			p.PolledTime.UTC().String(),
-			p.AuthorId,
-			p.AuthorName,
-			p.PolledTimeRoundedMinute.UTC().String(),
-			strconv.FormatInt(int64(p.Rank), 10),
-			string(p.RankOrderType),
-			string(p.RankOrderForCreatedWithinPast),
-		})
-	}
-	return rows
+	return nil
 }
 
 func toCsv(posts []reddit_miner.Post) [][]string {

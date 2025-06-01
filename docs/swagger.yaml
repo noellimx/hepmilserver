@@ -1,17 +1,83 @@
 definitions:
+  github_com_noellimx_hepmilserver_src_controller_mux_statistics.Post:
+    properties:
+      author_id:
+        type: string
+      author_name:
+        type: string
+      comment_count:
+        type: integer
+      data_ks_id:
+        type: string
+      is_synthetic:
+        type: boolean
+      perma_link_path:
+        type: string
+      polled_time:
+        type: string
+      polled_time_rounded_min:
+        type: string
+      rank:
+        type: integer
+      rank_order_created_within_past:
+        $ref: '#/definitions/statistics.CreatedWithinPast'
+      rank_order_type:
+        $ref: '#/definitions/statistics.OrderByAlgo'
+      score:
+        type: integer
+      subreddit_id:
+        type: string
+      subreddit_name:
+        type: string
+      title:
+        type: string
+    type: object
   ping.Response:
     type: object
+  statistics.CreatedWithinPast:
+    enum:
+    - hour
+    - day
+    - month
+    - year
+    type: string
+    x-enum-varnames:
+    - CreatedWithinPastHour
+    - CreatedWithinPastDay
+    - CreatedWithinPastMonth
+    - CreatedWithinPastYear
   statistics.ErrorResponse:
     type: object
   statistics.GetStatisticsResponseBody:
+    properties:
+      data:
+        $ref: '#/definitions/statistics.GetStatisticsResponseBodyData'
+      error:
+        type: string
     type: object
+  statistics.GetStatisticsResponseBodyData:
+    properties:
+      posts:
+        items:
+          $ref: '#/definitions/github_com_noellimx_hepmilserver_src_controller_mux_statistics.Post'
+        type: array
+    type: object
+  statistics.OrderByAlgo:
+    enum:
+    - top
+    - best
+    - hot
+    - new
+    type: string
+    x-enum-varnames:
+    - OrderByAlgoTop
+    - OrderByAlgoBest
+    - OrderByAlgoHot
+    - OrderByAlgoNew
   task.CreateRequestBody:
     properties:
       interval:
         description: to be executed every interval ["hour"]
-        type: string
-      items_created_within_past:
-        description: '["day","hour","month","year"]'
         type: string
       min_item_count:
         description: Minimum Item Count to retrieve
@@ -19,16 +85,71 @@ definitions:
       order_by:
         description: '["top", "hot", "best", "new"]'
         type: string
+      posts_created_within_past:
+        description: '["day","hour","month","year"]'
+        type: string
       subreddit_name:
         description: Subreddit Name
         type: string
     type: object
+  task.CreatedWithinPast:
+    enum:
+    - hour
+    - day
+    - month
+    - year
+    type: string
+    x-enum-varnames:
+    - CreatedWithinPastHour
+    - CreatedWithinPastDay
+    - CreatedWithinPastMonth
+    - CreatedWithinPastYear
   task.DeleteRequestBody:
     properties:
-      subreddit_name:
-        type: string
+      id:
+        type: integer
     type: object
   task.ErrorResponse:
+    type: object
+  task.Granularity:
+    enum:
+    - hour
+    type: string
+    x-enum-varnames:
+    - GranularityHour
+  task.ListResponseBodyData:
+    properties:
+      tasks:
+        items:
+          $ref: '#/definitions/task.Task'
+        type: array
+    type: object
+  task.OrderByAlgo:
+    enum:
+    - top
+    - best
+    - hot
+    - new
+    type: string
+    x-enum-varnames:
+    - OrderByAlgoTop
+    - OrderByAlgoBest
+    - OrderByAlgoHot
+    - OrderByAlgoNew
+  task.Task:
+    properties:
+      id:
+        type: integer
+      interval:
+        $ref: '#/definitions/task.Granularity'
+      min_item_count:
+        type: integer
+      order_by:
+        $ref: '#/definitions/task.OrderByAlgo'
+      posts_created_within_past:
+        $ref: '#/definitions/task.CreatedWithinPast'
+      subreddit_name:
+        type: string
     type: object
 info:
   contact: {}
@@ -45,14 +166,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/ping.Response'
-      summary: Ping the server
+      summary: Ping the server.
       tags:
       - healthcheck
   /statistics:
     get:
       consumes:
       - application/json
-      description: Retrieve time series data in normalized form.
+      description: Retrieve time series data in denormalized form.
       parameters:
       - description: name
         in: query
@@ -69,9 +190,14 @@ paths:
         name: rank_order_created_within_past
         required: true
         type: string
-      - description: 1=Minute,2=QuarterHour,3=Hour,4=Daily,5=Mins
+      - description: 1=Minute,2=QuarterHour,3=Hour,4=Daily,5=Monthly
         in: query
         name: granularity
+        required: true
+        type: string
+      - description: true=backfill incomplete data
+        in: query
+        name: backfill
         required: true
         type: string
       produces:
@@ -85,7 +211,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/statistics.ErrorResponse'
-      summary: Retrieve time series data in normalized form.
+      summary: Retrieve time series data in denormalized form.
       tags:
       - subreddit
   /task:
@@ -114,7 +240,7 @@ paths:
             $ref: '#/definitions/task.ErrorResponse'
       summary: Removes a task
       tags:
-      - subreddit
+      - task
     post:
       consumes:
       - application/json
@@ -140,5 +266,24 @@ paths:
             $ref: '#/definitions/task.ErrorResponse'
       summary: Create a new task to mine subreddit periodically
       tags:
-      - subreddit
+      - task
+  /tasks:
+    delete:
+      consumes:
+      - application/json
+      description: Get tasks.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/task.ListResponseBodyData'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/task.ErrorResponse'
+      summary: Get tasks.
+      tags:
+      - task
 swagger: "2.0"

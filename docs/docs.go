@@ -27,7 +27,7 @@ const docTemplate = `{
                 "tags": [
                     "healthcheck"
                 ],
-                "summary": "Ping the server",
+                "summary": "Ping the server.",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -40,7 +40,7 @@ const docTemplate = `{
         },
         "/statistics": {
             "get": {
-                "description": "Retrieve time series data in normalized form.",
+                "description": "Retrieve time series data in denormalized form.",
                 "consumes": [
                     "application/json"
                 ],
@@ -50,7 +50,7 @@ const docTemplate = `{
                 "tags": [
                     "subreddit"
                 ],
-                "summary": "Retrieve time series data in normalized form.",
+                "summary": "Retrieve time series data in denormalized form.",
                 "parameters": [
                     {
                         "type": "string",
@@ -75,8 +75,15 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "1=Minute,2=QuarterHour,3=Hour,4=Daily,5=Mins",
+                        "description": "1=Minute,2=QuarterHour,3=Hour,4=Daily,5=Monthly",
                         "name": "granularity",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "true=backfill incomplete data",
+                        "name": "backfill",
                         "in": "query",
                         "required": true
                     }
@@ -107,7 +114,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "subreddit"
+                    "task"
                 ],
                 "summary": "Create a new task to mine subreddit periodically",
                 "parameters": [
@@ -146,7 +153,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "subreddit"
+                    "task"
                 ],
                 "summary": "Removes a task",
                 "parameters": [
@@ -176,27 +183,151 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tasks": {
+            "delete": {
+                "description": "Get tasks.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "Get tasks.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/task.ListResponseBodyData"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/task.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "github_com_noellimx_hepmilserver_src_controller_mux_statistics.Post": {
+            "type": "object",
+            "properties": {
+                "author_id": {
+                    "type": "string"
+                },
+                "author_name": {
+                    "type": "string"
+                },
+                "comment_count": {
+                    "type": "integer"
+                },
+                "data_ks_id": {
+                    "type": "string"
+                },
+                "is_synthetic": {
+                    "type": "boolean"
+                },
+                "perma_link_path": {
+                    "type": "string"
+                },
+                "polled_time": {
+                    "type": "string"
+                },
+                "polled_time_rounded_min": {
+                    "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "rank_order_created_within_past": {
+                    "$ref": "#/definitions/statistics.CreatedWithinPast"
+                },
+                "rank_order_type": {
+                    "$ref": "#/definitions/statistics.OrderByAlgo"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "subreddit_id": {
+                    "type": "string"
+                },
+                "subreddit_name": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "ping.Response": {
             "type": "object"
+        },
+        "statistics.CreatedWithinPast": {
+            "type": "string",
+            "enum": [
+                "hour",
+                "day",
+                "month",
+                "year"
+            ],
+            "x-enum-varnames": [
+                "CreatedWithinPastHour",
+                "CreatedWithinPastDay",
+                "CreatedWithinPastMonth",
+                "CreatedWithinPastYear"
+            ]
         },
         "statistics.ErrorResponse": {
             "type": "object"
         },
         "statistics.GetStatisticsResponseBody": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/statistics.GetStatisticsResponseBodyData"
+                },
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "statistics.GetStatisticsResponseBodyData": {
+            "type": "object",
+            "properties": {
+                "posts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_noellimx_hepmilserver_src_controller_mux_statistics.Post"
+                    }
+                }
+            }
+        },
+        "statistics.OrderByAlgo": {
+            "type": "string",
+            "enum": [
+                "top",
+                "best",
+                "hot",
+                "new"
+            ],
+            "x-enum-varnames": [
+                "OrderByAlgoTop",
+                "OrderByAlgoBest",
+                "OrderByAlgoHot",
+                "OrderByAlgoNew"
+            ]
         },
         "task.CreateRequestBody": {
             "type": "object",
             "properties": {
                 "interval": {
                     "description": "to be executed every interval [\"hour\"]",
-                    "type": "string"
-                },
-                "items_created_within_past": {
-                    "description": "[\"day\",\"hour\",\"month\",\"year\"]",
                     "type": "string"
                 },
                 "min_item_count": {
@@ -207,34 +338,111 @@ const docTemplate = `{
                     "description": "[\"top\", \"hot\", \"best\", \"new\"]",
                     "type": "string"
                 },
+                "posts_created_within_past": {
+                    "description": "[\"day\",\"hour\",\"month\",\"year\"]",
+                    "type": "string"
+                },
                 "subreddit_name": {
                     "description": "Subreddit Name",
                     "type": "string"
                 }
             }
         },
+        "task.CreatedWithinPast": {
+            "type": "string",
+            "enum": [
+                "hour",
+                "day",
+                "month",
+                "year"
+            ],
+            "x-enum-varnames": [
+                "CreatedWithinPastHour",
+                "CreatedWithinPastDay",
+                "CreatedWithinPastMonth",
+                "CreatedWithinPastYear"
+            ]
+        },
         "task.DeleteRequestBody": {
             "type": "object",
             "properties": {
-                "subreddit_name": {
-                    "type": "string"
+                "id": {
+                    "type": "integer"
                 }
             }
         },
         "task.ErrorResponse": {
             "type": "object"
+        },
+        "task.Granularity": {
+            "type": "string",
+            "enum": [
+                "hour"
+            ],
+            "x-enum-varnames": [
+                "GranularityHour"
+            ]
+        },
+        "task.ListResponseBodyData": {
+            "type": "object",
+            "properties": {
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/task.Task"
+                    }
+                }
+            }
+        },
+        "task.OrderByAlgo": {
+            "type": "string",
+            "enum": [
+                "top",
+                "best",
+                "hot",
+                "new"
+            ],
+            "x-enum-varnames": [
+                "OrderByAlgoTop",
+                "OrderByAlgoBest",
+                "OrderByAlgoHot",
+                "OrderByAlgoNew"
+            ]
+        },
+        "task.Task": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "interval": {
+                    "$ref": "#/definitions/task.Granularity"
+                },
+                "min_item_count": {
+                    "type": "integer"
+                },
+                "order_by": {
+                    "$ref": "#/definitions/task.OrderByAlgo"
+                },
+                "posts_created_within_past": {
+                    "$ref": "#/definitions/task.CreatedWithinPast"
+                },
+                "subreddit_name": {
+                    "type": "string"
+                }
+            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "0.1",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Reddit Miner",
+	Description:      "HTTP API Server",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

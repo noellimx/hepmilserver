@@ -133,7 +133,7 @@ func (r *Repo) Stats(name string, orderType OrderByAlgo, fromTime *time.Time, to
 		and rank_order_type = $2
 		and rank_order_created_within_past = $3
 		and extract(minute from polled_time_rounded_min)::integer % 60 = 0
-		and polled_time_rounded_min > now() - interval '24hours';`, name, orderType, past)
+		and polled_time_rounded_min > $4;`, name, orderType, past, fromTime)
 	if err != nil {
 		return nil, err
 	}

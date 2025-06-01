@@ -1,7 +1,9 @@
 package response_types
 
 import (
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -12,6 +14,8 @@ type Response[T any] struct {
 
 func Error[T any](w http.ResponseWriter, httpCode int, err error, data T) {
 	w.WriteHeader(httpCode)
+	w.Header().Set("Content-Type", "application/json")
+
 	var r Response[T]
 
 	r.Data = data
@@ -47,4 +51,16 @@ func JsonBody[T any](w http.ResponseWriter, httpStatusCode int, body T) {
 	r.Error = nil
 	b, _ := json.Marshal(r)
 	w.Write(b)
+}
+
+func Csv(w http.ResponseWriter, filename string, body [][]string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/csv")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.csv", filename))
+
+	writer := csv.NewWriter(w)
+	defer writer.Flush()
+
+	writer.WriteAll(body)
+	return
 }
