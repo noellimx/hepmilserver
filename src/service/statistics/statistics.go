@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -234,6 +235,18 @@ func (s Service) Stats(name string, orderType statisticsrepo.OrderByAlgo, past s
 			})
 		}
 	}
+
+	slices.SortFunc(posts, func(a, b Post) int {
+		if a.PolledTimeRoundedMinute.Before(b.PolledTimeRoundedMinute) {
+			return -1
+		}
+		if a.Rank != nil && b.Rank != nil {
+			if *a.Rank < *b.Rank {
+				return -1
+			}
+		}
+		return 0
+	})
 	return posts, nil
 }
 
