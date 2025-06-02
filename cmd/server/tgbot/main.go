@@ -115,7 +115,7 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href
 
 /report 	download historical dataset over time
 /now		view current trending posts in subreddit
-				`, website, userName))
+				`, userName, website))
 			msg.ParseMode = "HTML"
 			bot.Send(msg)
 
