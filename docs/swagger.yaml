@@ -173,6 +173,7 @@ paths:
     get:
       consumes:
       - application/json
+      - ' text/csv'
       description: Retrieve time series data in denormalized form.
       parameters:
       - description: name
@@ -202,6 +203,7 @@ paths:
         type: string
       produces:
       - application/json
+      - ' text/csv'
       responses:
         "200":
           description: OK

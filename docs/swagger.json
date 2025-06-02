@@ -31,10 +31,12 @@
             "get": {
                 "description": "Retrieve time series data in denormalized form.",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    " text/csv"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    " text/csv"
                 ],
                 "tags": [
                     "subreddit"

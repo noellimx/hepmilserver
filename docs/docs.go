@@ -42,10 +42,12 @@ const docTemplate = `{
             "get": {
                 "description": "Retrieve time series data in denormalized form.",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    " text/csv"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    " text/csv"
                 ],
                 "tags": [
                     "subreddit"
@@ -437,12 +439,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.1",
+	Version:          "",
 	Host:             "",
-	BasePath:         "/",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "Reddit Miner",
-	Description:      "HTTP API Server",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -33,8 +33,8 @@ func NewHandlers(service *statisticsservice.Service) *Handlers {
 // @Param        rank_order_created_within_past   	query      string  true  "["hour","day","month","year"]"
 // @Param        granularity   						query      string  true  "1=Minute,2=QuarterHour,3=Hour,4=Daily,5=Monthly"
 // @Param        backfill   						query      string  true  "true=backfill incomplete data"
-// @Accept       json
-// @Produce      json
+// @Accept       json, text/csv
+// @Produce      json, text/csv
 // @Success      200  {object}  GetStatisticsResponseBody
 // @Failure      500  {object}  ErrorResponse
 // @Router       /statistics [get]
