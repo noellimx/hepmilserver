@@ -72,6 +72,7 @@ const (
 func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, orderBy OrderByAlgo, debugLogEnabled bool) <-chan Post {
 	ch := make(chan Post)
 	go func() {
+		defer close(ch)
 		if createdWithinPast != CreatedWithinPastDay {
 			log.Printf("time frame not supported %s\n", createdWithinPast)
 			return
@@ -172,7 +173,7 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 				RankOrderForCreatedWithinPast: createdWithinPast,
 			}
 		}
-		close(ch)
+
 	}()
 	return ch
 }
