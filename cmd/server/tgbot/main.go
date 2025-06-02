@@ -25,6 +25,11 @@ import (
 func main() {
 	godotenv.Load()
 	TGBOT_TOKEN := os.Getenv("TGBOT_TOKEN")
+	SERVER_ADDRESS := os.Getenv("API_SERVER_ADDRESS")
+
+	if SERVER_ADDRESS == "" {
+		log.Fatal("API_SERVER_ADDRESS environment variable not set")
+	}
 
 	bot, err := tgbotapi.NewBotAPI(TGBOT_TOKEN)
 	if err != nil {
@@ -70,11 +75,13 @@ flush_old: // prevent thundering herd
 		}
 	}
 	for update := range updates {
-		processUpdate(update, bot)
+		processUpdate(update, bot, SERVER_ADDRESS)
 	}
 }
 
-func processUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+func processUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI, serverAddress string) {
+	website := "https://liger-social-crane.ngrok-free.app/"
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Recovered from panic: %v", r)
@@ -101,24 +108,30 @@ func processUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 Hello %s 👋, Welcome to Reddit Miner.
 				
 Links:
-website: https://liger-social-crane.ngrok-free.app/
+website: %s
 design / live demo: <a href="https://docs.google.com/presentation/d/1v3m7omQCMDQCkXm_0DNJfBWddqaGq0aNfmLxQwVp4F8/edit?slide=id.g35e6300cbb9_0_47#slide=id.g35e6300cbb9_0_47"> slides </a>
 API Docs: <a href="https://liger-social-crane.ngrok-free.app/api/swagger/index.html"> swagger </a>
 Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href="https://github.com/noellimx/mk-fe.git"> frontend </a> 
 
 /report 	download historical dataset over time
 /now		view current trending posts in subreddit
-				`, userName))
+				`, website, userName))
 			msg.ParseMode = "HTML"
 			bot.Send(msg)
 
 		case "report":
 			client := TaskClient{
-				Host: "http://localhost:8080",
+				Host: serverAddress,
 			}
 			resp, err := client.GetList()
 			if err != nil {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Something went wrong.... %v %v", resp.Error, err))
+				bot.Send(msg)
+				break
+			}
+
+			if len(resp.Data.Tasks) == 0 {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("No tasks found. Please visit %s to create a task.", website))
 				bot.Send(msg)
 				break
 			}
@@ -139,7 +152,7 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href
 			switch {
 			case strings.HasPrefix(command, "now"):
 				client := TaskClient{
-					Host: "http://localhost:8080",
+					Host: serverAddress,
 				}
 				resp, err := client.GetList()
 				if err != nil {
@@ -318,7 +331,7 @@ Working on report...`, sName, sName, order, past))
 
 				go func() {
 					s := StatsClient{
-						Host: "http://localhost:8080",
+						Host: serverAddress,
 					}
 
 					respBody, fileName, err := s.GetCSV(sName, order, past, 3, f, tt)
