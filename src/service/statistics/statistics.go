@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"fmt"
+	"log"
 	"slices"
 	"strings"
 	"time"
@@ -130,6 +131,27 @@ func (s Service) Stats(name string, orderType statisticsrepo.OrderByAlgo, past s
 		for _, post := range postsDb {
 			posts = append(posts, cloneType(post))
 		}
+
+		slices.SortFunc(posts, func(a, b Post) int {
+			if a.PolledTimeRoundedMinute.Before(b.PolledTimeRoundedMinute) {
+				return -1
+			}
+
+			if b.PolledTimeRoundedMinute.Before(a.PolledTimeRoundedMinute) {
+				return 1
+			}
+			if a.Rank != nil && b.Rank != nil {
+				if *a.Rank < *b.Rank {
+					return -1
+				}
+				if *b.Rank < *a.Rank {
+					return 1
+				}
+			} else {
+				log.Printf("?? why some nil")
+			}
+			return 0
+		})
 		return posts, nil
 	}
 
@@ -251,6 +273,8 @@ func (s Service) Stats(name string, orderType statisticsrepo.OrderByAlgo, past s
 			if *b.Rank < *a.Rank {
 				return 1
 			}
+		} else {
+			log.Printf("?? why some nil")
 		}
 		return 0
 	})
