@@ -349,6 +349,9 @@ Working on report...`, sName, sName, order, past))
 						Bytes: respBody,
 					})
 					bot.Send(message)
+
+					msg := tgbotapi.NewMessage(chatId, fmt.Sprintf("Report Download Success. Visit website for more options."))
+					bot.Send(msg)
 				}()
 			}
 		}
