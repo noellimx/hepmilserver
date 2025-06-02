@@ -63,14 +63,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "[",
+                        "description": "[top,best,hot,new]",
                         "name": "rank_order_type",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "[",
+                        "description": "[hour,day,month,year]",
                         "name": "rank_order_created_within_past",
                         "in": "query",
                         "required": true

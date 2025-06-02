@@ -181,12 +181,12 @@ paths:
         name: subreddit_name
         required: true
         type: string
-      - description: '['
+      - description: '[top,best,hot,new]'
         in: query
         name: rank_order_type
         required: true
         type: string
-      - description: '['
+      - description: '[hour,day,month,year]'
         in: query
         name: rank_order_created_within_past
         required: true

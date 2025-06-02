@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,14 +22,9 @@ import (
 	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
 func main() {
 	godotenv.Load()
 	TGBOT_TOKEN := os.Getenv("TGBOT_TOKEN")
-
-	//serverInstanceHash := RandStringBytesRmndr(6)
-	//requestId := 0
 
 	bot, err := tgbotapi.NewBotAPI(TGBOT_TOKEN)
 	if err != nil {
@@ -44,8 +41,12 @@ func main() {
 			Description: "your journey begins here",
 		},
 		{
+			Command:     "report",
+			Description: "download historical dataset over time",
+		},
+		{
 			Command:     "now",
-			Description: "View current trending posts in subreddit",
+			Description: "view current trending posts in subreddit",
 		},
 	}
 
@@ -87,24 +88,56 @@ func processUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			bot.Send(msg)
 		case "start", "help":
 			userName := getUsername(update)
-			button1 := tgbotapi.NewInlineKeyboardButtonData("1.", "opt_1")
-			keyboard := tgbotapi.NewInlineKeyboardMarkup(
-				tgbotapi.NewInlineKeyboardRow(button1),
-			)
+
+			/*
+						Command:     "report",
+					Description: "download historical dataset over time",
+				},
+				{
+					Command:     "now",
+					Description: "view current trending posts in subreddit",
+			*/
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(`
-Hello %s 👋
+Hello %s 👋, Welcome to Reddit Miner.
 				
 Links:
 website: https://liger-social-crane.ngrok-free.app/
-live/demo guide: <a href="https://docs.google.com/presentation/d/1v3m7omQCMDQCkXm_0DNJfBWddqaGq0aNfmLxQwVp4F8/edit?slide=id.g35e6300cbb9_0_47#slide=id.g35e6300cbb9_0_47"> slides </a>
+design / live demo: <a href="https://docs.google.com/presentation/d/1v3m7omQCMDQCkXm_0DNJfBWddqaGq0aNfmLxQwVp4F8/edit?slide=id.g35e6300cbb9_0_47#slide=id.g35e6300cbb9_0_47"> slides </a>
 API Docs: <a href="https://liger-social-crane.ngrok-free.app/api/swagger/index.html"> swagger </a>
-Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> /  <a href="https://github.com/noellimx/mk-fe.git"> frontend </a> 
+Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href="https://github.com/noellimx/mk-fe.git"> frontend </a> 
+
+/report 	download historical dataset over time
+/now		view current trending posts in subreddit
 				`, userName))
 			msg.ParseMode = "HTML"
+			bot.Send(msg)
+
+		case "report":
+			client := TaskClient{
+				Host: "http://localhost:8080",
+			}
+			resp, err := client.GetList()
+			if err != nil {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Something went wrong.... %v %v", resp.Error, err))
+				bot.Send(msg)
+				break
+			}
+
+			var buttons []tgbotapi.InlineKeyboardButton
+			for _, task := range resp.Data.Tasks {
+				buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(task.SubRedditName, "report"+"_"+task.SubRedditName))
+			}
+			keyboard := tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(buttons...),
+			)
+
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Which subreddit would you like to obtain the dataset?")
 			msg.ReplyMarkup = keyboard
 			bot.Send(msg)
+
 		default:
-			if strings.HasPrefix(command, "now") {
+			switch {
+			case strings.HasPrefix(command, "now"):
 				client := TaskClient{
 					Host: "http://localhost:8080",
 				}
@@ -148,10 +181,10 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> /  <a href
 
 			case 2:
 				var buttons []tgbotapi.InlineKeyboardButton
-				for _, order := range []string{"top", "best", "hot", "new"} {
+				for _, order := range []string{"top"} {
 					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(order, callback.Data+"_"+order))
 				}
-				msg := tgbotapi.NewMessage(chatId, "Select Sort By")
+				msg := tgbotapi.NewMessage(chatId, "Select Sort By:")
 
 				keyboard := tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(buttons...),
@@ -160,10 +193,10 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> /  <a href
 				bot.Send(msg)
 			case 3:
 				var buttons []tgbotapi.InlineKeyboardButton
-				for _, past := range []string{"hour", "day", "month", "year"} {
+				for _, past := range []string{"day"} {
 					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(past, callback.Data+"_"+past))
 				}
-				msg := tgbotapi.NewMessage(chatId, "Select Post Time")
+				msg := tgbotapi.NewMessage(chatId, "Select Post Created Time")
 				keyboard := tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(buttons...),
 				)
@@ -174,7 +207,11 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> /  <a href
 				order := commandargs[2]
 				past := commandargs[3]
 
-				msg := tgbotapi.NewMessage(chatId, fmt.Sprintf(`SubReddit: <a href=\"https://reddit.com%s\">r/%s</a> Order: %s T: %s Working on it...`, sName, sName, order, past))
+				msg := tgbotapi.NewMessage(chatId, fmt.Sprintf(`SubReddit: <a href="https://reddit.com/%s">r/%s</a> Order: %s T: %s
+Working on it...`, sName, sName, order, past))
+				msg.ParseMode = "HTML"
+				msg.DisableWebPagePreview = true
+
 				bot.Send(msg)
 
 				go func() {
@@ -186,7 +223,11 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> /  <a href
 
 					log.Printf("len(ps): %d", len(ps))
 					if len(ps) == 0 {
-						msg := tgbotapi.NewMessage(chatId, fmt.Sprintf(`SubReddit: <a href=\"https://reddit.com%s\">r/%s</a> Order: %s T: %s No Data...`, sName, sName, order, past))
+						msg := tgbotapi.NewMessage(chatId, fmt.Sprintf(`SubReddit: <a href="https://reddit.com/%s">r/%s</a> Order: %s T: %s
+Result: No Data...`, sName, sName, order, past))
+						msg.DisableWebPagePreview = true
+						msg.ParseMode = "HTML"
+
 						bot.Send(msg)
 						return
 					}
@@ -205,10 +246,10 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> /  <a href
 						ps = ps[:20]
 					}
 
-					ss.WriteString(fmt.Sprintf("SubReddit: <a href=\"https://reddit.com%s\">r/%s</a> Order: %s T: %s", sName, sName, order, past))
+					ss.WriteString(fmt.Sprintf(`SubReddit: <a href="https://reddit.com/%s">r/%s</a> Order: %s T: %s`, sName, sName, order, past))
 					for _, p := range ps {
 						logging := fmt.Sprintf(`
-Rank: %02d : 🔹 <a href="https://reddit.com%s">%s</a> `, p.Rank, p.PermaLinkPath, p.Title)
+Rank %02d: <a href="https://reddit.com%s">%s</a> `, p.Rank, p.PermaLinkPath, p.Title)
 						ss.WriteString(logging)
 					}
 
@@ -217,6 +258,84 @@ Rank: %02d : 🔹 <a href="https://reddit.com%s">%s</a> `, p.Rank, p.PermaLinkPa
 					//msg.ParseMode = "HTML"
 					msg.ParseMode = "HTML"
 					bot.Send(msg)
+				}()
+			}
+		case "report":
+			switch len(commandargs) {
+			case 2:
+				var buttons []tgbotapi.InlineKeyboardButton
+				for _, order := range []string{"top"} {
+					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(order, callback.Data+"_"+order))
+				}
+				msg := tgbotapi.NewMessage(chatId, "Select Sort By:")
+
+				keyboard := tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(buttons...),
+				)
+				msg.ReplyMarkup = keyboard
+				bot.Send(msg)
+			case 3:
+				var buttons []tgbotapi.InlineKeyboardButton
+				for _, past := range []string{"day"} {
+					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(past, callback.Data+"_"+past))
+				}
+				msg := tgbotapi.NewMessage(chatId, "Select Post Created Time:")
+				keyboard := tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(buttons...),
+				)
+				msg.ReplyMarkup = keyboard
+				bot.Send(msg)
+
+			case 4:
+				var buttons []tgbotapi.InlineKeyboardButton
+				for _, past := range []string{"Past 24 Hours"} {
+					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(past, callback.Data+"_"+past))
+				}
+				msg := tgbotapi.NewMessage(chatId, "Select Time Range:")
+				keyboard := tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(buttons...),
+				)
+				msg.ReplyMarkup = keyboard
+				bot.Send(msg)
+			case 5:
+				sName := commandargs[1]
+				order := commandargs[2]
+				past := commandargs[3]
+				trange := commandargs[4]
+
+				var f, tt time.Time
+				switch trange {
+				case "Past 24 Hours":
+					tt = time.Now()
+					f = tt.Add(-24 * time.Hour)
+				}
+
+				msg := tgbotapi.NewMessage(chatId, fmt.Sprintf(`SubReddit: <a href="https://reddit.com/%s">r/%s</a> Order: %s T: %s Time Range: Past 24 Hours
+Working on report...`, sName, sName, order, past))
+				msg.ParseMode = "HTML"
+				msg.DisableWebPagePreview = true
+				bot.Send(msg)
+
+				go func() {
+					s := StatsClient{
+						Host: "http://localhost:8080",
+					}
+
+					respBody, fileName, err := s.GetCSV(sName, order, past, 3, f, tt)
+					if err != nil {
+						msg := tgbotapi.NewMessage(chatId, fmt.Sprintf("Something went wrong.... %v", err))
+						bot.Send(msg)
+						return
+					}
+
+					if fileName == "" {
+						fileName = "output.csv"
+					}
+					message := tgbotapi.NewDocument(chatId, tgbotapi.FileBytes{
+						Name:  fileName,
+						Bytes: respBody,
+					})
+					bot.Send(message)
 				}()
 			}
 		}
@@ -240,10 +359,6 @@ func getUsername(update tgbotapi.Update) string {
 	}
 
 	return username
-}
-
-func convert(posts []Post) [][]string {
-	return nil
 }
 
 func toCsv(posts []reddit_miner.Post) [][]string {
@@ -310,7 +425,7 @@ type GetStatisticsResponseBodyData struct {
 
 type GetStatisticsResponseBody = Response[GetStatisticsResponseBodyData]
 
-func (s *StatsClient) Get(subRedditName string, rankOrderAlgoType string, rankPast string, granularity int) (GetStatisticsResponseBody, error) {
+func (s *StatsClient) GetJSON(subRedditName string, rankOrderAlgoType string, rankPast string, granularity int) (GetStatisticsResponseBody, error) {
 	baseUrl := s.Host + "/statistics"
 	params := url.Values{}
 	params.Add("subreddit_name", subRedditName)
@@ -321,7 +436,14 @@ func (s *StatsClient) Get(subRedditName string, rankOrderAlgoType string, rankPa
 	// Final URL with encoded params
 	fullURL := baseUrl + "?" + params.Encode()
 
-	resp, err := http.Get(fullURL)
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		return GetStatisticsResponseBody{}, err
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		// handle error
 		fmt.Println("Error:", err)
@@ -342,6 +464,76 @@ func (s *StatsClient) Get(subRedditName string, rankOrderAlgoType string, rankPa
 	var b GetStatisticsResponseBody
 	err = json.Unmarshal(body, &b)
 	return b, nil
+}
+
+func (s *StatsClient) GetCSV(subRedditName string, rankOrderAlgoType string, rankPast string, granularity int, _fromTime, _toTime time.Time) ([]byte, string, error) {
+	baseUrl := s.Host + "/statistics"
+	fromTime := _fromTime.Format("2006-01-02T15:04:05.000Z")
+	toTime := _toTime.Format("2006-01-02T15:04:05.000Z")
+
+	params := url.Values{}
+	params.Add("subreddit_name", subRedditName)
+	params.Add("rank_order_type", rankOrderAlgoType)
+	params.Add("rank_order_created_within_past", rankPast)
+	params.Add("granularity", strconv.Itoa(granularity))
+	params.Add("to_time", toTime)
+	params.Add("from_time", fromTime)
+
+	// Final URL with encoded params
+	fullURL := baseUrl + "?" + params.Encode()
+
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		return []byte{}, "", err
+	}
+	req.Header.Set("Accept", "text/csv")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		// handle error
+		fmt.Println("Error:", err)
+		return []byte{}, "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return []byte{}, "", errors.New(resp.Status)
+	}
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		var b GetStatisticsResponseBody
+		err = json.Unmarshal(body, &b)
+		fmt.Println("Read error:", err)
+		em := "error"
+		if b.Error != nil {
+			em = *b.Error
+		}
+		return []byte{}, "", fmt.Errorf(em)
+	}
+
+	return body, extractFilename(resp.Header.Get("Content-Disposition")), nil
+
+}
+
+func extractFilename(contentDisposition string) string {
+	_, params, err := mime.ParseMediaType(contentDisposition)
+	if err != nil {
+		log.Println("Error:", err, contentDisposition)
+		return ""
+	}
+	filename, ok := params["filename"]
+	log.Printf("filename: %v, %v\n", filename, ok)
+	if ok {
+		return filename
+	}
+
+	// Handle filename*=UTF-8'' format
+	filenameUTF8, ok := params["filename*"]
+	if ok && strings.HasPrefix(filenameUTF8, "UTF-8''") {
+		return strings.TrimPrefix(filenameUTF8, "UTF-8''")
+	}
+	return ""
 }
 
 type Task struct {

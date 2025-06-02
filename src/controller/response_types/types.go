@@ -54,7 +54,6 @@ func JsonBody[T any](w http.ResponseWriter, httpStatusCode int, body T) {
 }
 
 func Csv(w http.ResponseWriter, filename string, body [][]string) {
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.csv", filename))
 

@@ -29,8 +29,8 @@ func NewHandlers(service *statisticsservice.Service) *Handlers {
 // @Description  Retrieve time series data in denormalized form.
 // @Tags         subreddit
 // @Param        subreddit_name   					query      string  true  "name"
-// @Param        rank_order_type   					query      string  true  "["top","best","hot","new"]"
-// @Param        rank_order_created_within_past   	query      string  true  "["hour","day","month","year"]"
+// @Param        rank_order_type   					query      string  true  "[top,best,hot,new]"
+// @Param        rank_order_created_within_past   	query      string  true  "[hour,day,month,year]"
 // @Param        granularity   						query      string  true  "1=Minute,2=QuarterHour,3=Hour,4=Daily,5=Monthly"
 // @Param        backfill   						query      string  true  "true=backfill incomplete data"
 // @Accept       json, text/csv
@@ -49,7 +49,7 @@ func (h Handlers) Get(w http.ResponseWriter, r *http.Request) {
 	_toTime := r.URL.Query().Get("to_time")
 	_shouldBackfill := r.URL.Query().Get("backfill")
 
-	contentType := r.Header.Get("Content-Type")
+	contentType := r.Header.Get("Accept")
 
 	if contentType != "application/json" && contentType != "text/csv" {
 		response_types.ErrorNoBody(w, http.StatusUnsupportedMediaType, fmt.Errorf("content type %s not supported", contentType))
@@ -93,7 +93,11 @@ func (h Handlers) Get(w http.ResponseWriter, r *http.Request) {
 			Posts: toJSON(posts),
 		})
 	case "text/csv":
-		csvName := fmt.Sprintf(`%s_%s_%s_FROM_%s_TO_%s`, _subRedditName, _rankOrderType, _rankOrderCreatedWithinPast, fromTime, toTime)
+		layout := "2006-01-02_15-04-05"
+		ftString := fromTime.Format(layout)
+		ttString := toTime.Format(layout)
+
+		csvName := fmt.Sprintf(`%s_%s_%s_FROM_%s_TO_%s`, _subRedditName, _rankOrderType, _rankOrderCreatedWithinPast, ftString, ttString)
 		response_types.Csv(w, csvName, toCSV(posts))
 	}
 }
