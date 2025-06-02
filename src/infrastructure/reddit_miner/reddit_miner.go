@@ -73,16 +73,16 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 	ch := make(chan Post)
 	go func() {
 		if createdWithinPast != CreatedWithinPastDay {
-			log.Printf("time frame not supported %s", createdWithinPast)
+			log.Printf("time frame not supported %s\n", createdWithinPast)
 			return
 		}
 
 		if subReddit == "" {
-			log.Printf("SubRedditPosts() subReddit Name is empty")
+			log.Printf("SubRedditPosts() subReddit Name is empty\n")
 			return
 		}
 		if orderBy == "" {
-			log.Printf("SubRedditPosts() subReddit Name is empty")
+			log.Printf("SubRedditPosts() subReddit Name is empty\n")
 			return
 		}
 
@@ -105,7 +105,7 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 		defer cancel()
 
 		url := fmt.Sprintf("https://www.reddit.com/r/%s/%s?t=%s", subReddit, orderBy, createdWithinPast)
-		log.Printf("SubRedditPosts() URL: %s", url)
+		log.Printf("SubRedditPosts() URL: %s\n", url)
 
 		var posts []PostDom
 		err := chromedp.Run(ctx,
@@ -155,7 +155,6 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 				c := int32(_score)
 				score = &c
 			}
-			log.Printf("p.Rank %v", p.Index)
 
 			ch <- Post{
 				Title:                         p.Title,

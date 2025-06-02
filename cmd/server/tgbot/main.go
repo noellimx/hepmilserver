@@ -5,24 +5,38 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	statisticsrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
 
-	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
-	"github.com/noellimx/hepmilserver/src/utils/bytes"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
+	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
 )
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandStringBytesRmndr(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.IntN(1000)%(len(letterBytes))]
+	}
+	return string(b)
+}
 
 func main() {
 	godotenv.Load()
 	TGBOT_TOKEN := os.Getenv("TGBOT_TOKEN")
+
+	//serverInstanceHash := RandStringBytesRmndr(6)
+	//requestId := 0
 
 	bot, err := tgbotapi.NewBotAPI(TGBOT_TOKEN)
 	if err != nil {
@@ -36,14 +50,10 @@ func main() {
 	commands := []tgbotapi.BotCommand{
 		{
 			Command:     "start",
-			Description: "Start interacting with the bot",
+			Description: "your journey begins here",
 		},
 		{
 			Command:     "help",
-			Description: "Get help and usage information",
-		},
-		{
-			Command:     "now",
 			Description: "Get help and usage information",
 		},
 	}
@@ -61,40 +71,71 @@ func main() {
 
 	for update := range updates {
 		if update.Message != nil {
-			switch update.Message.Command() {
+			switch command := update.Message.Command(); command {
 			case "":
-				var username string
-				if update.Message.Chat != nil {
-					username = update.Message.Chat.UserName
-				}
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(`Hello %s 👋 Please use commands to chat with me~ Start your message with "/" \n /hello `, username))
+				userName := getUsername(update)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(`Hello %s 👋 Please use commands to chat with me~ Start your message with "/" \n`, userName))
 				bot.Send(msg)
 			case "start", "help":
-				button1 := tgbotapi.NewInlineKeyboardButtonData("Add Task", "opt_1")
-				button2 := tgbotapi.NewInlineKeyboardButtonData("Option 2", "opt_2")
+				userName := getUsername(update)
+				button1 := tgbotapi.NewInlineKeyboardButtonData("1.", "opt_1")
 				keyboard := tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(button1, button2),
+					tgbotapi.NewInlineKeyboardRow(button1),
 				)
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "*Hello*, /start click [here](https://example.com).")
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(`
+					*Hello* %s,
+					Website: %s,
+					Swagger API: %s,
+					Guide: %s
+					[here](https://example.com).`, userName, "https://example.com", "https://guides.com"))
 				msg.ParseMode = "Markdown"
 
 				//msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello, world! See menu for commands")
 				msg.ReplyMarkup = keyboard
 				bot.Send(msg)
-			case "now":
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Working on it.... %v", update.Message.Time()))
-				bot.Send(msg)
-				client := StatsClient{
-					Host: "http://localhost:8080",
-				}
+			default:
+				if strings.HasPrefix(command, "now") {
+					client := TaskClient{
+						Host: "http://localhost:8080",
+					}
+					resp, err := client.GetList()
+					if err != nil {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Something went wrong.... %v %v", resp.Error, err))
+						bot.Send(msg)
+						break
+					}
 
-				resp, err := client.Get("memes", "top", "day", 3)
-				if err != nil {
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Something went wrong.... %v %v", resp.Error, err))
+					var buttons []tgbotapi.InlineKeyboardButton
+					for _, task := range resp.Data.Tasks {
+						buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(task.SubRedditName, "now"+"_"+task.SubRedditName))
+					}
+					keyboard := tgbotapi.NewInlineKeyboardMarkup(
+						tgbotapi.NewInlineKeyboardRow(buttons...),
+					)
+
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Which subreddit would you like to query?")
+					msg.ReplyMarkup = keyboard
 					bot.Send(msg)
 					break
 				}
-				bb := convert(resp.Data.Posts)
+
+				//msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Working on it.... %v", update.Message.Time()))
+				//bot.Send(msg)
+
+				break
+				//msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Working on it.... %v", update.Message.Time()))
+				//bot.Send(msg)
+				//client := StatsClient{
+				//	Host: "http://localhost:8080",
+				//}
+				//
+				//resp, err := client.Get("memes", "top", "day", 3)
+				//if err != nil {
+				//	msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Something went wrong.... %v %v", resp.Error, err))
+				//	bot.Send(msg)
+				//	break
+				//}
+				//bb := convert(resp.Data.Posts)
 
 				//postCh := reddit_miner.SubRedditPosts("memes", reddit_miner.CreatedWithinPastDay, reddit_miner.OrderByAlgoTop, false)
 				//var posts []reddit_miner.Post
@@ -102,21 +143,124 @@ func main() {
 				//	posts = append(posts, post)
 				//}
 				//var bb = toCsv(posts)
-				b, err := bytes.TwoDStringAsBytes(bb)
-				if err != nil {
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something went wrong executing the command now")
-					bot.Send(msg)
-					return
-				}
-				message := tgbotapi.NewDocument(update.Message.Chat.ID, tgbotapi.FileBytes{
-					Name:  "output.csv",
-					Bytes: b.Bytes(),
-				})
-				bot.Send(message)
-			default:
+				//b, err := bytes.TwoDStringAsBytes(bb)
+				//if err != nil {
+				//	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something went wrong executing the command now")
+				//	bot.Send(msg)
+				//	return
+				//}
+				//message := tgbotapi.NewDocument(update.Message.Chat.ID, tgbotapi.FileBytes{
+				//	Name:  "output.csv",
+				//	Bytes: b.Bytes(),
+				//})
+				//bot.Send(message)
 			}
+		} else if update.CallbackQuery != nil {
+			callback := update.CallbackQuery
+			commandargs := strings.Split(callback.Data, "_")
+			if len(commandargs) == 0 {
+				return
+			}
+			//args := strings.Split(command, "_")
+
+			// len 2 -> [now, subreddit] -> request order
+			// len 3 -> [now, subreddit, order] -> request past
+			// len 4 -> [now, subreddit, order, past] -> get statistics
+			cmd := commandargs[0]
+
+			switch cmd {
+			case "now":
+
+				switch len(commandargs) {
+
+				case 2:
+					var buttons []tgbotapi.InlineKeyboardButton
+					for _, order := range []string{"top", "best", "hot", "new"} {
+						buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(order, callback.Data+"_"+order))
+					}
+					msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Sort By?")
+
+					keyboard := tgbotapi.NewInlineKeyboardMarkup(
+						tgbotapi.NewInlineKeyboardRow(buttons...),
+					)
+					msg.ReplyMarkup = keyboard
+					bot.Send(msg)
+				case 3:
+					var buttons []tgbotapi.InlineKeyboardButton
+					for _, past := range []string{"hour", "day", "month", "year"} {
+						buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(past, callback.Data+"_"+past))
+					}
+					msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Time?")
+					keyboard := tgbotapi.NewInlineKeyboardMarkup(
+						tgbotapi.NewInlineKeyboardRow(buttons...),
+					)
+					msg.ReplyMarkup = keyboard
+					bot.Send(msg)
+				case 4:
+					sName := commandargs[1]
+					order := commandargs[2]
+					past := commandargs[3]
+
+					ch := reddit_miner.SubRedditPosts(sName, reddit_miner.CreatedWithinPast(past), reddit_miner.OrderByAlgo(order), false)
+					var ps []reddit_miner.Post
+					for p := range ch {
+						ps = append(ps, p)
+					}
+
+					slices.SortFunc(ps, func(a, b reddit_miner.Post) int {
+						if a.Rank < b.Rank {
+							return -1
+						} else if a.Rank > b.Rank {
+							return 1
+						}
+						return 0
+					})
+					if len(ps) == 0 {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "no data...")
+						bot.Send(msg)
+						bot.Request(msg)
+						return
+					}
+
+					var ss = strings.Builder{}
+					for _, p := range ps {
+						logging := fmt.Sprintf(`Rank: %2d : 🔹 <a href="https://reddit.com%s">%s</a> —`, p.Rank, p.PermaLinkPath, p.Title)
+						ss.WriteString(logging)
+					}
+
+					log.Println(ss.String())
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, ss.String())
+					//msg.ParseMode = "HTML"
+					msg.ParseMode = "HTML"
+					bot.Send(msg)
+				}
+			}
+			response := tgbotapi.NewCallback(callback.ID, "")
+			bot.Request(response)
+			//edit := tgbotapi.NewEditMessageText(callback.Message.Chat.ID, callback.Message.MessageID, "EDIT MESSAGEW You chose "+callback.Data)
+			//bot.Send(edit)
+
 		}
 	}
+}
+
+func formatTable(rows [][]string) string {
+	var result string
+	result += "Post Name         | Rank\n"
+	result += "------------------|-----\n"
+	for _, row := range rows {
+		result += fmt.Sprintf("%-18s| %s\n", row[0], row[1])
+	}
+	return result
+}
+
+func getUsername(update tgbotapi.Update) string {
+	var username string
+	if update.Message.Chat != nil {
+		username = update.Message.Chat.UserName
+	}
+
+	return username
 }
 
 func convert(posts []Post) [][]string {
@@ -217,6 +361,51 @@ func (s *StatsClient) Get(subRedditName string, rankOrderAlgoType string, rankPa
 	fmt.Println("Body:", string(body))
 
 	var b GetStatisticsResponseBody
+	err = json.Unmarshal(body, &b)
+	return b, nil
+}
+
+type Task struct {
+	Id                     int64  `json:"id"`
+	SubRedditName          string `json:"subreddit_name"`
+	MinItemCount           int64  `json:"min_item_count"`
+	Interval               string `json:"interval"`
+	OrderBy                string `json:"order_by"`
+	PostsCreatedWithinPast string `json:"posts_created_within_past"`
+}
+
+type GetTaskResponseBodyData struct {
+	Tasks []Task `json:"tasks"`
+}
+type GetTaskResponseBody = Response[GetTaskResponseBodyData]
+
+type TaskClient struct {
+	Host string
+}
+
+func (s *TaskClient) GetList() (GetTaskResponseBody, error) {
+	baseUrl := s.Host + "/tasks"
+	fullURL := baseUrl
+
+	resp, err := http.Get(fullURL)
+	if err != nil {
+		// handle error
+		fmt.Println("Error:", err)
+		return GetTaskResponseBody{}, err
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Read error:", err)
+		return GetTaskResponseBody{}, err
+	}
+
+	fmt.Println("Status:", resp.Status)
+	fmt.Println("Body:", string(body))
+
+	var b GetTaskResponseBody
 	err = json.Unmarshal(body, &b)
 	return b, nil
 }

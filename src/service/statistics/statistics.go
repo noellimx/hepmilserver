@@ -2,7 +2,6 @@ package statistics
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -206,7 +205,6 @@ func (s Service) Stats(name string, orderType statisticsrepo.OrderByAlgo, past s
 			continue
 		}
 
-		log.Printf("missing time point %v LEN %d", t, len(twoD))
 		for ksId, _posts := range twoD {
 			firstTime := time.Time{}
 			for k, _ := range _posts {
@@ -214,8 +212,6 @@ func (s Service) Stats(name string, orderType statisticsrepo.OrderByAlgo, past s
 				break
 			}
 			firstPost := _posts[firstTime]
-
-			log.Printf("%#v firstPostfirstPost %#v %#d", firstPost.Title, firstPost.DataKsId)
 
 			posts = append(posts, Post{
 				Title:       firstPost.Title,

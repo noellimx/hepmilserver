@@ -93,9 +93,7 @@ func (h Handlers) Get(w http.ResponseWriter, r *http.Request) {
 			Posts: toJSON(posts),
 		})
 	case "text/csv":
-
 		csvName := fmt.Sprintf(`%s_%s_%s_FROM_%s_TO_%s`, _subRedditName, _rankOrderType, _rankOrderCreatedWithinPast, fromTime, toTime)
-
 		response_types.Csv(w, csvName, toCSV(posts))
 	}
 }
@@ -103,11 +101,17 @@ func (h Handlers) Get(w http.ResponseWriter, r *http.Request) {
 func toCSV(posts []statisticsservice.Post) [][]string {
 	header := []string{
 		"row_position",
-		"title",
-		"perma_link_path",
-		"data_ks_id",
+
 		"polled_time",
 		"polled_time_rounded_min",
+
+		"rank",
+		"rank_order_type",
+		"rank_order_created_within_past",
+
+		"data_ks_id",
+		"title",
+		"perma_link_path",
 
 		"comment_count",
 		"score",
@@ -115,10 +119,6 @@ func toCSV(posts []statisticsservice.Post) [][]string {
 		"subreddit_name",
 		"author_id",
 		"author_name",
-
-		"rank",
-		"rank_order_type",
-		"rank_order_created_within_past",
 	}
 
 	rows := [][]string{header}
@@ -141,23 +141,26 @@ func toCSV(posts []statisticsservice.Post) [][]string {
 
 		rows = append(rows, []string{
 			strconv.Itoa(i),
-			p.Title,
-			p.PermaLinkPath,
-			p.DataKsId,
+
 			p.PolledTime.UTC().String(),
 			p.PolledTimeRoundedMinute.UTC().String(),
+
+			rank,
+			string(p.RankOrderType),
+			string(p.RankOrderForCreatedWithinPast),
+
+			p.DataKsId,
+			p.Title,
+			p.PermaLinkPath,
 
 			commentCount,
 			score,
 
 			p.SubredditId,
 			p.SubredditName,
+
 			p.AuthorId,
 			p.AuthorName,
-
-			rank,
-			string(p.RankOrderType),
-			string(p.RankOrderForCreatedWithinPast),
 		})
 	}
 	return rows
