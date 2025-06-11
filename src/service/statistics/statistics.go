@@ -102,7 +102,7 @@ func (s Service) Stats(name string, orderType statisticsrepo.OrderByAlgo, past s
 		return []Post{}, fmt.Errorf("order algo type %s not supported", orderType)
 	}
 
-	if past != statisticsrepo.CreatedWithinPastDay {
+	if !(past == statisticsrepo.CreatedWithinPastDay || past == statisticsrepo.CreatedWithinPastWeek || past == statisticsrepo.CreatedWithinPastYear) {
 		return []Post{}, fmt.Errorf("past day %s not supported", past)
 	}
 

@@ -34,6 +34,7 @@ const (
 	CreatedWithinPastDay   CreatedWithinPast = "day"
 	CreatedWithinPastMonth CreatedWithinPast = "month"
 	CreatedWithinPastYear  CreatedWithinPast = "year"
+	CreatedWithinPastWeek  CreatedWithinPast = "week"
 )
 
 type Granularity int64
