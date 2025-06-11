@@ -64,16 +64,17 @@ type PostForm struct {
 	DataKsId      string
 	PermaLinkPath string
 
-	AuthorId   string
-	AuthorName string
+	AuthorId      string
+	AuthorName    string
+	PostCreatedAt time.Time
 }
 
 func (r *Repo) insert(post PostForm) error {
-	row := r.conn.QueryRow(context.Background(), "insert into post_statistics(title, perma_link_path, data_ks_id, score, subreddit_id, comment_count, subreddit_name, polled_time, author_id, author_name, polled_time_rounded_min, rank, rank_order_type, rank_order_created_within_past) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id",
+	row := r.conn.QueryRow(context.Background(), "insert into post_statistics(title, perma_link_path, data_ks_id, score, subreddit_id, comment_count, subreddit_name, polled_time, author_id, author_name, polled_time_rounded_min, rank, rank_order_type, rank_order_created_within_past, post_created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id",
 		post.Title, post.PermaLinkPath, post.DataKsId, post.Score, post.SubredditId,
 		post.CommentCount, post.SubredditName, post.PolledTime, post.AuthorId,
 		post.AuthorName, post.PolledTimeRoundedMinute,
-		post.Rank, post.RankOrderType, post.RankOrderForCreatedWithinPast,
+		post.Rank, post.RankOrderType, post.RankOrderForCreatedWithinPast, post.PostCreatedAt,
 	)
 	var id int64
 	return row.Scan(&id)

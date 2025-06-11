@@ -217,7 +217,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_noellimx_hepmilserver_src_controller_mux_statistics.Post": {
+        "github_com_noellimx_redditminer_src_controller_mux_statistics.Post": {
             "type": "object",
             "properties": {
                 "author_id": {
@@ -305,7 +305,7 @@ const docTemplate = `{
                 "posts": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_noellimx_hepmilserver_src_controller_mux_statistics.Post"
+                        "$ref": "#/definitions/github_com_noellimx_redditminer_src_controller_mux_statistics.Post"
                     }
                 }
             }

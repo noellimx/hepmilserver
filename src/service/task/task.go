@@ -3,7 +3,7 @@ package task
 import (
 	"fmt"
 
-	"github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
+	"github.com/noellimx/redditminer/src/infrastructure/repositories/task"
 )
 
 type Service struct {

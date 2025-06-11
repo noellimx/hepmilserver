@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
-	statisticsrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
+	statisticsrepo "github.com/noellimx/redditminer/src/infrastructure/repositories/statistics"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
-	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
+	"github.com/noellimx/redditminer/src/infrastructure/reddit_miner"
 )
 
 func main() {
@@ -137,7 +137,19 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href
 			}
 
 			var buttons []tgbotapi.InlineKeyboardButton
-			for _, task := range resp.Data.Tasks {
+			tasks := resp.Data.Tasks
+			slices.SortFunc(tasks, func(a, b Task) int {
+				if a.SubRedditName < b.SubRedditName {
+					return -1
+				} else if a.SubRedditName > b.SubRedditName {
+					return 1
+				}
+				return 0
+			})
+			tasks = slices.CompactFunc(tasks, func(a, b Task) bool {
+				return a.SubRedditName == b.SubRedditName
+			})
+			for _, task := range tasks {
 				buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(task.SubRedditName, "report"+"_"+task.SubRedditName))
 			}
 			keyboard := tgbotapi.NewInlineKeyboardMarkup(
@@ -206,7 +218,7 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href
 				bot.Send(msg)
 			case 3:
 				var buttons []tgbotapi.InlineKeyboardButton
-				for _, past := range []string{"day"} {
+				for _, past := range []string{"day", "week", "month"} {
 					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(past, callback.Data+"_"+past))
 				}
 				msg := tgbotapi.NewMessage(chatId, "Select Post Created Time")
@@ -289,7 +301,7 @@ Rank %02d: <a href="https://reddit.com%s">%s</a> `, p.Rank, p.PermaLinkPath, p.T
 				bot.Send(msg)
 			case 3:
 				var buttons []tgbotapi.InlineKeyboardButton
-				for _, past := range []string{"day"} {
+				for _, past := range []string{"day", "week", "month"} {
 					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(past, callback.Data+"_"+past))
 				}
 				msg := tgbotapi.NewMessage(chatId, "Select Post Created Time:")

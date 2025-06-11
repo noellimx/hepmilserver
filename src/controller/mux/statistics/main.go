@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/noellimx/hepmilserver/src/controller/response_types"
-	"github.com/noellimx/hepmilserver/src/httplog"
+	"github.com/noellimx/redditminer/src/controller/response_types"
+	"github.com/noellimx/redditminer/src/httplog"
 
-	statisticsrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
-	statisticsservice "github.com/noellimx/hepmilserver/src/service/statistics"
+	statisticsrepo "github.com/noellimx/redditminer/src/infrastructure/repositories/statistics"
+	statisticsservice "github.com/noellimx/redditminer/src/service/statistics"
 )
 
 type Handlers struct {

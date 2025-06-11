@@ -11,27 +11,27 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/noellimx/hepmilserver/src/config"
-	"github.com/noellimx/hepmilserver/src/httplog"
+	"github.com/noellimx/redditminer/src/config"
+	"github.com/noellimx/redditminer/src/httplog"
 
-	"github.com/noellimx/hepmilserver/src/controller/middlewares"
+	"github.com/noellimx/redditminer/src/controller/middlewares"
 
-	"github.com/noellimx/hepmilserver/src/controller/mux/ping"
+	"github.com/noellimx/redditminer/src/controller/mux/ping"
 
-	taskmux "github.com/noellimx/hepmilserver/src/controller/mux/task"
-	taskrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
-	taskservice "github.com/noellimx/hepmilserver/src/service/task"
+	taskmux "github.com/noellimx/redditminer/src/controller/mux/task"
+	taskrepo "github.com/noellimx/redditminer/src/infrastructure/repositories/task"
+	taskservice "github.com/noellimx/redditminer/src/service/task"
 
-	statisticsmux "github.com/noellimx/hepmilserver/src/controller/mux/statistics"
-	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
-	statisticsrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
-	statisticsservice "github.com/noellimx/hepmilserver/src/service/statistics"
+	statisticsmux "github.com/noellimx/redditminer/src/controller/mux/statistics"
+	"github.com/noellimx/redditminer/src/infrastructure/reddit_miner"
+	statisticsrepo "github.com/noellimx/redditminer/src/infrastructure/repositories/statistics"
+	statisticsservice "github.com/noellimx/redditminer/src/service/statistics"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/cors"
 
-	_ "github.com/noellimx/hepmilserver/docs"
+	_ "github.com/noellimx/redditminer/docs"
 	"github.com/swaggo/http-swagger"
 )
 
@@ -43,7 +43,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Starting hepmilserver::main().")
+	log.Println("Starting redditminer::main().")
 
 	interruptSignal := make(chan os.Signal, 1)
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
@@ -93,7 +93,7 @@ func main() {
 	log.Println("Received signal: " + recvSig.String() + " ; tearing down...")
 	<-cron.Stop().Done()
 
-	log.Println("Terminating hepmilserver::main()...")
+	log.Println("Terminating redditminer::main()...")
 }
 
 func Init() (err error) {

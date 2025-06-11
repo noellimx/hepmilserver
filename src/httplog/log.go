@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/noellimx/hepmilserver/src/controller/middlewares"
+	"github.com/noellimx/redditminer/src/controller/middlewares"
 
 	"github.com/google/uuid"
 )

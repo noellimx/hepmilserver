@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
-	statisticsrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/statistics"
+	"github.com/noellimx/redditminer/src/infrastructure/reddit_miner"
+	statisticsrepo "github.com/noellimx/redditminer/src/infrastructure/repositories/statistics"
 )
 
 type Service struct {
@@ -25,7 +25,11 @@ func (s Service) Scrape(subRedditName string, postsCreatedWithinPast reddit_mine
 	postCh := reddit_miner.SubRedditPosts(subRedditName, postsCreatedWithinPast, algo, false)
 
 	var postForms []statisticsrepo.PostForm
+
+	const layout = "2006-01-02T15:04:05.000000-0700"
+
 	for p := range postCh {
+		ts, _ := time.Parse(layout, p.CreatedTimestamp)
 		srName := strings.Replace(p.SubredditPrefixedName, "r/", "", -1)
 		postForms = append(postForms, statisticsrepo.PostForm{
 			Title:                         p.Title,
@@ -42,6 +46,7 @@ func (s Service) Scrape(subRedditName string, postsCreatedWithinPast reddit_mine
 			Rank:                          p.Rank,
 			RankOrderType:                 statisticsrepo.OrderByAlgo(p.RankOrderType),
 			RankOrderForCreatedWithinPast: statisticsrepo.CreatedWithinPast(p.RankOrderForCreatedWithinPast),
+			PostCreatedAt:                 ts,
 		})
 	}
 	//
@@ -102,7 +107,7 @@ func (s Service) Stats(name string, orderType statisticsrepo.OrderByAlgo, past s
 		return []Post{}, fmt.Errorf("order algo type %s not supported", orderType)
 	}
 
-	if !(past == statisticsrepo.CreatedWithinPastDay || past == statisticsrepo.CreatedWithinPastWeek || past == statisticsrepo.CreatedWithinPastYear) {
+	if !(past == statisticsrepo.CreatedWithinPastDay || past == statisticsrepo.CreatedWithinPastWeek || past == statisticsrepo.CreatedWithinPastMonth) {
 		return []Post{}, fmt.Errorf("past day %s not supported", past)
 	}
 

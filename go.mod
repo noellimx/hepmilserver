@@ -1,4 +1,4 @@
-module github.com/noellimx/hepmilserver
+module github.com/noellimx/redditminer
 
 go 1.23.5
 

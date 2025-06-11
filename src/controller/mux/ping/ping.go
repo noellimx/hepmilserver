@@ -2,8 +2,8 @@ package ping
 
 import (
 	"encoding/json"
-	"github.com/noellimx/hepmilserver/src/controller/middlewares"
-	"github.com/noellimx/hepmilserver/src/httplog"
+	"github.com/noellimx/redditminer/src/controller/middlewares"
+	"github.com/noellimx/redditminer/src/httplog"
 	"log"
 	"net/http"
 )

@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/noellimx/hepmilserver/src/infrastructure/reddit_miner"
+	"github.com/noellimx/redditminer/src/infrastructure/reddit_miner"
 )
 
 func main() {

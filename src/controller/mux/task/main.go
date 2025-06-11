@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/noellimx/hepmilserver/src/controller/response_types"
-	"github.com/noellimx/hepmilserver/src/httplog"
-	taskrepo "github.com/noellimx/hepmilserver/src/infrastructure/repositories/task"
-	taskservice "github.com/noellimx/hepmilserver/src/service/task"
+	"github.com/noellimx/redditminer/src/controller/response_types"
+	"github.com/noellimx/redditminer/src/httplog"
+	taskrepo "github.com/noellimx/redditminer/src/infrastructure/repositories/task"
+	taskservice "github.com/noellimx/redditminer/src/service/task"
 )
 
 type Handlers struct {
