@@ -146,7 +146,7 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href
 				}
 				return 0
 			})
-			slices.Compact(tasks)
+			tasks = slices.Compact(tasks)
 			for _, task := range resp.Data.Tasks {
 				buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(task.SubRedditName, "report"+"_"+task.SubRedditName))
 			}
