@@ -137,6 +137,16 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href
 			}
 
 			var buttons []tgbotapi.InlineKeyboardButton
+			tasks := resp.Data.Tasks
+			slices.SortFunc(tasks, func(a, b Task) int {
+				if a.SubRedditName < b.SubRedditName {
+					return -1
+				} else if a.SubRedditName > b.SubRedditName {
+					return 1
+				}
+				return 0
+			})
+			slices.Compact(tasks)
 			for _, task := range resp.Data.Tasks {
 				buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(task.SubRedditName, "report"+"_"+task.SubRedditName))
 			}
@@ -206,7 +216,7 @@ Github: <a href="https://github.com/noellimx/mk-fe.git"> backend </a> |  <a href
 				bot.Send(msg)
 			case 3:
 				var buttons []tgbotapi.InlineKeyboardButton
-				for _, past := range []string{"day"} {
+				for _, past := range []string{"day", "week", "month"} {
 					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(past, callback.Data+"_"+past))
 				}
 				msg := tgbotapi.NewMessage(chatId, "Select Post Created Time")
@@ -289,7 +299,7 @@ Rank %02d: <a href="https://reddit.com%s">%s</a> `, p.Rank, p.PermaLinkPath, p.T
 				bot.Send(msg)
 			case 3:
 				var buttons []tgbotapi.InlineKeyboardButton
-				for _, past := range []string{"day"} {
+				for _, past := range []string{"day", "week", "month"} {
 					buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(past, callback.Data+"_"+past))
 				}
 				msg := tgbotapi.NewMessage(chatId, "Select Post Created Time:")
