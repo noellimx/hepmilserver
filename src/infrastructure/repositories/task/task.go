@@ -28,6 +28,7 @@ const (
 	CreatedWithinPastHour  CreatedWithinPast = "hour"
 	CreatedWithinPastDay   CreatedWithinPast = "day"
 	CreatedWithinPastMonth CreatedWithinPast = "month"
+	CreatedWithinPastWeek  CreatedWithinPast = "week"
 	CreatedWithinPastYear  CreatedWithinPast = "year"
 )
 
