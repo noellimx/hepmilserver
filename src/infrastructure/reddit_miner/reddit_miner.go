@@ -74,7 +74,7 @@ func SubRedditPosts(subReddit string, createdWithinPast CreatedWithinPast, order
 	ch := make(chan Post)
 	go func() {
 		defer close(ch)
-		if createdWithinPast != CreatedWithinPastDay || createdWithinPast != CreatedWithinPastMonth || createdWithinPast != CreatedWithinPastWeek {
+		if !(createdWithinPast == CreatedWithinPastDay || createdWithinPast == CreatedWithinPastMonth || createdWithinPast == CreatedWithinPastWeek) {
 			log.Printf("time frame not supported %s\n", createdWithinPast)
 			return
 		}
