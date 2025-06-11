@@ -29,7 +29,7 @@ func (s Service) Scrape(subRedditName string, postsCreatedWithinPast reddit_mine
 	const layout = "2006-01-02T15:04:05.000000-0700"
 
 	for p := range postCh {
-		ts, _ := time.Parse("2025-06-10T08:45:16.981000+0000", p.CreatedTimestamp)
+		ts, _ := time.Parse(layout, p.CreatedTimestamp)
 		srName := strings.Replace(p.SubredditPrefixedName, "r/", "", -1)
 		postForms = append(postForms, statisticsrepo.PostForm{
 			Title:                         p.Title,
